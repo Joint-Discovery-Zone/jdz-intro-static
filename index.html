@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN" class="no-js" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+    <title>JDZone · 三人软件工程小组</title>
+    <meta
+      name="description"
+      content="JDZone（Joint Discovery Zone）是一个由三名成员组成的软件工程小组。我们在协作中打磨产品，在迭代中验证想法。"
+    />
+    <meta name="author" content="JDZone" />
+    <!-- 由内联脚本与 useTheme 共同更新，跟随手动主题而不是只跟随系统 -->
+    <meta name="theme-color" content="#F7F6F4" />
+
+    <!-- 社交分享卡片：替换 public/og.png 即可更新预览图 -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:title" content="JDZone · Joint Discovery Zone" />
+    <meta
+      property="og:description"
+      content="JDZone 是一个专注软件工程实践的三人小组。我们在协作中打磨产品，在迭代中验证想法。"
+    />
+    <meta property="og:image" content="/og.png" />
+    <meta property="og:image:alt" content="JDZone 三人软件工程小组：Joint Discovery Zone。" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!--
+      在样式加载前确定主题，避免浅色页面闪一下再变深色（FOUC）。
+      这段脚本必须保持内联，并且尽量短。
+    -->
+    <script>
+      ;(function () {
+        /* 入场动画只在 JS 可用时启用；无 JS 时内容直接可见 */
+        document.documentElement.classList.remove('no-js')
+        document.documentElement.classList.add('js')
+
+        try {
+          var saved = localStorage.getItem('jdz-theme')
+          var theme =
+            saved === 'light' || saved === 'dark'
+              ? saved
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+          document.documentElement.dataset.theme = theme
+          document.documentElement.style.colorScheme = theme
+
+          var themeColor = document.querySelector('meta[name="theme-color"]')
+          if (themeColor) {
+            themeColor.setAttribute('content', theme === 'dark' ? '#08090B' : '#F7F6F4')
+          }
+        } catch (error) {
+          /* 隐私模式下 localStorage 可能不可用，保持默认浅色即可 */
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <!--
+      无 JS 时的兜底内容：静态托管环境下依然能被搜索引擎与读屏软件读到核心信息。
+      Vue 挂载后会接管 #app，这里的内容不再显示。
+    -->
+    <noscript>
+      <div style="max-width: 720px; margin: 64px auto; padding: 0 24px; font-family: system-ui, sans-serif; line-height: 1.8">
+        <h1>JDZone · Joint Discovery Zone</h1>
+        <p>JDZone 是一个专注软件工程实践的三人小组。我们在协作中打磨产品，在迭代中验证想法。</p>
+        <p>
+          成员：zeionl（ENGINEERING）、Dreverie（PRODUCT &amp; UX）、jeffrey（DEVELOPMENT）。
+        </p>
+        <p>本站需要启用 JavaScript 才能查看完整内容。</p>
+      </div>
+    </noscript>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

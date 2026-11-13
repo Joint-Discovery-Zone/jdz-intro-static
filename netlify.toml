@@ -1,0 +1,38 @@
+# 站点部署在 Netlify 的纯静态产物上。
+# 未来接入后端时，把下面 [build] 保持不变，另外在 Netlify 里配置 API 代理
+# 或把 VITE_API_BASE_URL 指向独立服务即可。
+
+[build]
+  command = "pnpm build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # 与 package.json 的 packageManager 保持一致
+  PNPM_VERSION = "11"
+
+# 单页应用：所有未命中的路径都交给 index.html 处理
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# 带指纹的静态资源可以长期缓存
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# 基础安全响应头（CSP 未启用：需要按实际接入的分析 / 字体来源单独配置）
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), interest-cohort=()"
