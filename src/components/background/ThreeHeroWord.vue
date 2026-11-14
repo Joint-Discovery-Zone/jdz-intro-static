@@ -115,9 +115,11 @@ const CODE_TOKENS = [
 const host = ref<HTMLElement | null>(null)
 const stage = ref<HTMLElement | null>(null)
 const ready = ref(false)
-const fallbackVisible = ref(true)
-const pointCount = ref(0)
 const reduced = useReducedMotion()
+// 正常加载时从空白开始，不再先铺一层固定点阵；
+// 只有减弱动效或 WebGL 失败时才挂出 2D 兜底字。
+const fallbackVisible = ref(reduced.value)
+const pointCount = ref(0)
 const { isDark } = useTheme()
 
 let renderer: WebGLRenderer | null = null
@@ -141,7 +143,6 @@ let lastFrame = 0
 let resizeObserver: ResizeObserver | null = null
 let intersectionObserver: IntersectionObserver | null = null
 let bootTimer = 0
-let hideFallbackTimer = 0
 
 const pointer = { x: 0, y: 0 }
 const pointerArea = { active: false, x: 0, y: 0 }
@@ -667,10 +668,6 @@ function beginEntrance() {
   if (started || !ready.value) return
   started = true
   entranceStart = performance.now()
-  // 点云开始显形后再收起 2D 降级层，避免中间出现空白
-  hideFallbackTimer = window.setTimeout(() => {
-    fallbackVisible.value = false
-  }, 1100)
 }
 
 function maybeStartEntrance() {
@@ -825,7 +822,6 @@ function dispose() {
   running = false
   cancelAnimationFrame(frameId)
   window.clearTimeout(bootTimer)
-  window.clearTimeout(hideFallbackTimer)
   window.removeEventListener('jdz:boot-done', onBootDone)
   document.removeEventListener('visibilitychange', onVisibilityChange)
   window.removeEventListener('pointermove', onWindowPointerMove)
@@ -871,20 +867,23 @@ onMounted(async () => {
   }
 
   try {
-    await Promise.race([
-      Promise.all([
-        document.fonts.load('700 260px Oswald'),
-        document.fonts.load('500 30px "JetBrains Mono"'),
+    // three 的下载和字体等待并行：启动层还在时就开始取 3D chunk，
+    // 这样开场结束后更容易直接看到点阵，而不是空白等资源。
+    const [THREE] = await Promise.all([
+      import('three'),
+      Promise.race([
+        Promise.all([
+          document.fonts.load('700 260px Oswald'),
+          document.fonts.load('500 30px "JetBrains Mono"'),
+        ]),
+        new Promise((resolve) => window.setTimeout(resolve, 1400)),
       ]),
-      new Promise((resolve) => window.setTimeout(resolve, 1400)),
     ])
-    if (disposed) return
-
-    const THREE = await import('three')
     if (disposed) return
     init(THREE)
   } catch (error) {
-    // 加载失败时保留 2D 点阵字，页面仍然完整可用
+    // 加载失败时才挂出 2D 点阵字，页面仍然完整可用
+    fallbackVisible.value = true
     console.warn('[ThreeHeroWord] 3D 字标初始化失败，已回退到点阵字。', error)
   }
 })
@@ -902,8 +901,7 @@ onBeforeUnmount(dispose)
     <DotMatrixWord
       v-if="fallbackVisible"
       :text="text"
-      class="absolute inset-0 h-full w-full transition-opacity duration-700"
-      :class="fallbackVisible ? 'opacity-100' : 'opacity-0'"
+      class="absolute inset-0 h-full w-full"
     />
 
     <div

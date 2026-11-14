@@ -35,7 +35,7 @@ const { activeIndex, progress, scrollToId, scrollToIndex } = useSectionNav(
   sectionIds,
 )
 
-const { phase, progress: bootProgress, isBooting, skip } = useBoot(1000)
+const { phase, progress: bootProgress, isBooting, skip, finish: finishBoot } = useBoot(820)
 const { toggle: toggleTheme } = useTheme()
 
 /**
@@ -156,6 +156,12 @@ onMounted(() => {
   // 浏览器的原生 hash 定位可能滚动 body，这里复位后只操作内部滚动容器
   document.body.scrollTop = 0
   document.documentElement.scrollTop = 0
+
+  // 关键字体就绪即可退场，不再固定等满一秒多。
+  // 最低保留 600ms，让开场有一个可读的节奏；最长仍由 useBoot 的 820ms 兜底。
+  const minVisible = new Promise<void>((resolve) => window.setTimeout(resolve, 600))
+  const fontsReady = document.fonts?.ready ?? Promise.resolve()
+  Promise.all([fontsReady, minVisible]).then(() => finishBoot())
 })
 
 onBeforeUnmount(() => {
