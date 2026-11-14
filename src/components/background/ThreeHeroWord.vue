@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type {
+  BufferGeometry,
   Color,
   Group,
   LineBasicMaterial,
+  Matrix4,
   PerspectiveCamera,
   Points,
   PointsMaterial,
+  Ray,
+  Raycaster,
   Scene,
+  Sprite,
+  SpriteMaterial,
   Vector2,
   Vector3,
   WebGLRenderer,
@@ -21,6 +27,7 @@ import { useTheme } from '@/composables/useTheme'
  * ------------------------------------------------------------------
  * 设计意图：
  * - 保留参考页“点阵字”作为品牌识别，但把它从平面升级成有厚度的点云；
+ * - 几十段代码碎片从画面四边飞入，停成字面纹理，回应“由代码组成”；
  * - 用三颗极细的轨道线暗示“三个人 / 三条工作流”，只有一段是朱红色；
  * - 鼠标经过时点云被轻轻推开，指针离开后弹回；
  * - 首屏等待启动层退场后再组装，避免动画藏在启动层后面空转。
@@ -53,6 +60,47 @@ interface HeroUniforms {
   uSignal: { value: Color }
 }
 
+/**
+ * 代码碎片
+ * 入场时从画面四边飞向字面，停稳后留在点云里，作为“由代码组成”的纹理。
+ * 每个 sprite 有独立的 canvas 纹理，数量控制在几十个，成本可控。
+ */
+interface CodeToken {
+  sprite: Sprite
+  material: SpriteMaterial
+  start: Vector3
+  target: Vector3
+  baseWidth: number
+  baseHeight: number
+  aspect: number
+  delay: number
+  phase: number
+  tone: 'ink' | 'accent'
+}
+
+const CODE_TOKENS = [
+  'const',
+  'async',
+  'return',
+  '=>',
+  '{ }',
+  '</>',
+  'git',
+  'build',
+  'npm',
+  'type',
+  '01',
+  'API',
+  'init',
+  'test',
+  'DOM',
+  'deploy',
+  'CSS',
+  'fn()',
+  '0101',
+  'readonly',
+] as const
+
 const host = ref<HTMLElement | null>(null)
 const stage = ref<HTMLElement | null>(null)
 const ready = ref(false)
@@ -67,6 +115,10 @@ let camera: PerspectiveCamera | null = null
 let assembly: Group | null = null
 let wordPoints: Points | null = null
 let uniforms: HeroUniforms | null = null
+let raycaster: Raycaster | null = null
+let localRay: Ray | null = null
+let inverseMatrix: Matrix4 | null = null
+let pointerNdc: Vector2 | null = null
 let frameId = 0
 let running = false
 let visible = true
@@ -81,7 +133,12 @@ let bootTimer = 0
 let hideFallbackTimer = 0
 
 const pointer = { x: 0, y: 0 }
+const pointerArea = { active: false, x: 0, y: 0 }
 const mouseTarget = { x: 0, y: 0 }
+const mouseLocal = { x: 9, y: 9 }
+const mouseLocalTarget = { x: 9, y: 9 }
+const tokens: CodeToken[] = []
+const tokenDisposables: Array<{ dispose: () => void }> = []
 const ringDisposables: Array<{ dispose: () => void }> = []
 const ringMaterials: Array<{ material: LineBasicMaterial; tone: 'ink' | 'accent' }> = []
 const nodeMaterials: Array<{ material: PointsMaterial; tone: 'accent' | 'signal' }> = []
@@ -122,7 +179,8 @@ function buildWordGeometry(THREE: ThreeModule, text: string) {
   const scales: number[] = []
   const phases: number[] = []
 
-  const worldWidth = 5.35
+  // 比上一版略宽，留出代码碎片环绕的空间，同时让字本身更占满画布
+  const worldWidth = 5.65
   const unit = worldWidth / canvas.width
 
   for (let y = 0; y < canvas.height; y += step) {
@@ -188,6 +246,113 @@ function buildCircle(THREE: ThreeModule, radius: number, from: number, to: numbe
   return new THREE.BufferGeometry().setFromPoints(points)
 }
 
+/** 把一段代码画成透明纹理，供 Sprite 使用；不同碎片共用同一套绘制逻辑 */
+function createTokenTexture(THREE: ThreeModule, text: string) {
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+
+  const fontSize = 30
+  const font = `500 ${fontSize}px "JetBrains Mono", "SFMono-Regular", Consolas, monospace`
+  ctx.font = font
+  const width = Math.ceil(ctx.measureText(text).width) + 18
+  const height = 48
+  canvas.width = width
+  canvas.height = height
+
+  ctx.font = font
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = '#fff'
+  ctx.fillText(text, width / 2, height / 2 + 1)
+
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.minFilter = THREE.LinearFilter
+  texture.magFilter = THREE.LinearFilter
+  return { texture, aspect: width / height }
+}
+
+/**
+ * 在字面位置撒几十个代码碎片。
+ * 入场前它们分布在画面四边，随组装进度飞向目标位置；停稳后作为低频纹理留在字里。
+ */
+function buildCodeTokens(THREE: ThreeModule, geometry: BufferGeometry, parent: Group) {
+  const positions = geometry.getAttribute('position')
+  const total = positions.count
+  const count = window.innerWidth < 720 ? 10 : 18
+  const group = new THREE.Group()
+  group.renderOrder = 4
+  parent.add(group)
+  // 碎片主要落在字的外缘，中心留出读字的空白；
+  // 同时保持最小间距，避免代码糊成一团噪声。
+  const placed: Vector3[] = []
+
+  for (let i = 0; i < count; i += 1) {
+    let target: Vector3 | null = null
+    for (let attempt = 0; attempt < 22; attempt += 1) {
+      const index = Math.floor(Math.random() * total)
+      const candidate = new THREE.Vector3().fromBufferAttribute(positions, index)
+      candidate.z += 0.04
+      const nearEdge = Math.abs(candidate.x) > 0.82 || Math.abs(candidate.y) > 0.28
+      if (!nearEdge && attempt < 16) continue
+      if (placed.every((point) => point.distanceToSquared(candidate) > 0.26)) {
+        target = candidate
+        break
+      }
+    }
+    if (!target) continue
+    placed.push(target)
+
+    const text = CODE_TOKENS[Math.floor(Math.random() * CODE_TOKENS.length)] ?? 'const'
+    const textureInfo = createTokenTexture(THREE, text)
+    if (!textureInfo) continue
+
+    const tone: 'ink' | 'accent' = Math.random() > 0.82 ? 'accent' : 'ink'
+    const material = new THREE.SpriteMaterial({
+      map: textureInfo.texture,
+      color: readToken(tone === 'accent' ? '--c-accent' : '--c-fg', tone === 'accent' ? '#c84630' : '#16181c'),
+      transparent: true,
+      opacity: 0,
+      depthTest: false,
+      depthWrite: false,
+      toneMapped: false,
+    })
+    const sprite = new THREE.Sprite(material)
+    const baseHeight = 0.18 + Math.random() * 0.06
+    sprite.scale.set(baseHeight * textureInfo.aspect, baseHeight, 1)
+    sprite.renderOrder = 4
+
+    // 四条边随机起飞，方向和字面位置相关，避免所有碎片从同一个角挤进来
+    const side = i % 4
+    const jitter = 0.8
+    const start = new THREE.Vector3()
+    if (side === 0) start.set(-6.6, target.y * 1.3 + (Math.random() - 0.5) * jitter, -1.2 + Math.random() * 2.4)
+    else if (side === 1) start.set(6.6, target.y * 1.3 + (Math.random() - 0.5) * jitter, -1.2 + Math.random() * 2.4)
+    else if (side === 2) start.set(target.x * 1.2 + (Math.random() - 0.5) * jitter, 3.9, -1.2 + Math.random() * 2.4)
+    else start.set(target.x * 1.2 + (Math.random() - 0.5) * jitter, -3.9, -1.2 + Math.random() * 2.4)
+
+    sprite.position.copy(start)
+    // 初始很小，飞入过程中放大到最终字号
+    sprite.scale.multiplyScalar(0.35)
+    group.add(sprite)
+
+    tokens.push({
+      sprite,
+      material,
+      start,
+      target,
+      baseWidth: baseHeight * textureInfo.aspect,
+      baseHeight,
+      aspect: textureInfo.aspect,
+      delay: Math.random() * 0.3,
+      phase: Math.random() * Math.PI * 2,
+      tone,
+    })
+    tokenDisposables.push(textureInfo.texture, material)
+  }
+}
+
 const vertexShader = /* glsl */ `
   uniform float uTime;
   uniform float uProgress;
@@ -226,7 +391,7 @@ const vertexShader = /* glsl */ `
     // 指针排斥：在字所在的平面内推开一小块区域
     vec2 away = pos.xy - uMouse;
     float dist = length(away);
-    float push = (1.0 - smoothstep(0.0, 0.85, dist)) * 0.15 * assemble;
+    float push = (1.0 - smoothstep(0.0, 0.95, dist)) * 0.3 * assemble;
     pos.xy += normalize(away + 0.0001) * push;
 
     vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
@@ -274,7 +439,12 @@ function init(THREE: ThreeModule) {
 
   scene = new THREE.Scene()
   camera = new THREE.PerspectiveCamera(34, 1, 0.1, 40)
-  camera.position.z = 6.0
+  camera.position.z = 5.9
+
+  raycaster = new THREE.Raycaster()
+  localRay = new THREE.Ray()
+  inverseMatrix = new THREE.Matrix4()
+  pointerNdc = new THREE.Vector2(9, 9)
 
   assembly = new THREE.Group()
   scene.add(assembly)
@@ -414,6 +584,9 @@ function init(THREE: ThreeModule) {
   })
   if (nodeTexture) ringDisposables.push(nodeTexture)
 
+  // 代码碎片最后加，渲染在点云与轨道之上；它们从四边飞入后停成字面纹理
+  buildCodeTokens(THREE, geometry, assembly)
+
   // --- 尺寸 ---
   const mountSize = mount.getBoundingClientRect()
   resize(mountSize.width || 1, mountSize.height || 1)
@@ -451,11 +624,11 @@ function resize(width: number, height: number) {
   renderer.setSize(width, height, false)
   camera.aspect = aspect
   camera.fov = aspect < 1.15 ? 38 : 34
-  camera.position.z = aspect < 1.15 ? 7.1 : 6.0
+  camera.position.z = aspect < 1.15 ? 7.1 : 5.9
   camera.updateProjectionMatrix()
   if (uniforms) uniforms.uDpr.value = Math.min(window.devicePixelRatio || 1, 2)
   // 窄屏把字整体收一点，给轨道留出呼吸空间
-  const scale = Math.min(1, Math.max(0.8, aspect / 1.75))
+  const scale = Math.min(1, Math.max(0.82, aspect / 1.62))
   assembly?.scale.setScalar(scale)
   if (running) render(performance.now())
 }
@@ -482,6 +655,9 @@ function syncColors() {
       readToken(tone === 'accent' ? '--c-accent' : '--c-signal-ink', tone === 'accent' ? '#c84630' : '#0b6b7f'),
     )
   })
+  tokens.forEach(({ material, tone }) => {
+    material.color.setStyle(readToken(tone === 'accent' ? '--c-accent' : '--c-fg', tone === 'accent' ? '#c84630' : '#16181c'))
+  })
 }
 
 function beginEntrance() {
@@ -505,16 +681,33 @@ function onBootDone() {
 
 function onWindowPointerMove(event: PointerEvent) {
   if (event.pointerType === 'touch') return
-  const mount = host.value
+  const mount = stage.value ?? host.value
   if (!mount) return
   const rect = mount.getBoundingClientRect()
-  const x = ((event.clientX - rect.left) / rect.width) * 2 - 1
-  const y = -(((event.clientY - rect.top) / rect.height) * 2 - 1)
-  pointer.x = Math.max(-1.4, Math.min(1.4, x))
-  pointer.y = Math.max(-1.4, Math.min(1.4, y))
+  const inside =
+    event.clientX >= rect.left &&
+    event.clientX <= rect.right &&
+    event.clientY >= rect.top &&
+    event.clientY <= rect.bottom
+
+  pointerArea.active = inside
+  if (!inside) {
+    pointer.x = 0
+    pointer.y = 0
+    return
+  }
+
+  // NDC 坐标交给 raycast，真正换算到 assembly 的局部平面；
+  // 不能直接把 [-1,1] 乘一个魔法数，否则点云被推开的位置会和光标错开。
+  const ndcX = ((event.clientX - rect.left) / rect.width) * 2 - 1
+  const ndcY = -(((event.clientY - rect.top) / rect.height) * 2 - 1)
+  pointerNdc?.set(ndcX, ndcY)
+  pointer.x = Math.max(-1.4, Math.min(1.4, ndcX))
+  pointer.y = Math.max(-1.4, Math.min(1.4, ndcY))
 }
 
 function onPointerRelease() {
+  pointerArea.active = false
   pointer.x = 0
   pointer.y = 0
 }
@@ -554,16 +747,68 @@ function render(now: number) {
 
   const entrance = started ? Math.min(1, Math.max(0, (now - entranceStart) / 1900)) : 0
   const eased = 1 - Math.pow(1 - entrance, 3)
+  const entranceSeconds = started ? (now - entranceStart) / 1000 : 0
 
   uniforms.uTime.value = elapsed
   uniforms.uProgress.value = eased
-  uniforms.uMouse.value.set(mouseTarget.x * 2.55, mouseTarget.y * 1.45)
 
   // 小幅摆动就够，保持文字可读；指针只改变姿态，不改变构图
   assembly.rotation.y = Math.sin(elapsed * 0.22) * 0.16 + mouseTarget.x * 0.1
   assembly.rotation.x = Math.sin(elapsed * 0.17) * 0.055 - mouseTarget.y * 0.07
   assembly.position.x = 0.1
   assembly.position.y = -0.1 + Math.sin(elapsed * 0.5) * 0.035
+
+  // 指针位置必须反投影到 assembly 的局部 z=0 平面。
+  // 直接按 [-1,1] 缩放会随相机 fov / 画布宽高 / 组变换产生偏移，
+  // 表现就是“推开的中心”和实际光标对不上。
+  if (
+    pointerArea.active &&
+    raycaster &&
+    localRay &&
+    inverseMatrix &&
+    pointerNdc &&
+    camera &&
+    assembly
+  ) {
+    camera.updateMatrixWorld()
+    assembly.updateMatrixWorld()
+    raycaster.setFromCamera(pointerNdc, camera)
+    inverseMatrix.copy(assembly.matrixWorld).invert()
+    localRay.copy(raycaster.ray).applyMatrix4(inverseMatrix)
+    const directionZ = localRay.direction.z
+    if (Math.abs(directionZ) > 1e-4) {
+      const distance = -localRay.origin.z / directionZ
+      if (distance > 0) {
+        mouseLocalTarget.x = localRay.origin.x + localRay.direction.x * distance
+        mouseLocalTarget.y = localRay.origin.y + localRay.direction.y * distance
+      }
+    }
+  } else {
+    // 光标不在画布内时把斥力中心移远，避免整块字被无形的手推开
+    mouseLocalTarget.x = 9
+    mouseLocalTarget.y = 9
+  }
+
+  const follow = Math.min(1, delta / 110)
+  mouseLocal.x += (mouseLocalTarget.x - mouseLocal.x) * follow
+  mouseLocal.y += (mouseLocalTarget.y - mouseLocal.y) * follow
+  uniforms.uMouse.value.set(mouseLocal.x, mouseLocal.y)
+
+  // 代码碎片：从四边飞入字面，停稳后留下低频漂移和微弱呼吸
+  for (const token of tokens) {
+    const progress = Math.min(1, Math.max(0, (entranceSeconds - token.delay) / 1.35))
+    const tokenEase = 1 - Math.pow(1 - progress, 3)
+    token.sprite.position.lerpVectors(token.start, token.target, tokenEase)
+    if (progress >= 1) {
+      token.sprite.position.x += Math.sin(elapsed * 0.32 + token.phase) * 0.012
+      token.sprite.position.y += Math.cos(elapsed * 0.28 + token.phase) * 0.01
+    }
+    const scaleFactor = 0.35 + tokenEase * 0.65
+    token.sprite.scale.set(token.baseWidth * scaleFactor, token.baseHeight * scaleFactor, 1)
+    const fadeIn = Math.min(1, Math.max(0, (progress - 0.02) / 0.22))
+    token.material.opacity =
+      fadeIn * fadeIn * (3 - 2 * fadeIn) * (0.72 + Math.sin(elapsed * 0.7 + token.phase) * 0.06)
+  }
 
   renderer.render(scene, camera)
 }
@@ -582,6 +827,9 @@ function dispose() {
   intersectionObserver?.disconnect()
   ringDisposables.forEach((item) => item.dispose())
   ringDisposables.length = 0
+  tokenDisposables.forEach((item) => item.dispose())
+  tokenDisposables.length = 0
+  tokens.length = 0
   if (renderer) {
     renderer.dispose()
     renderer.forceContextLoss()
@@ -593,6 +841,10 @@ function dispose() {
   assembly = null
   wordPoints = null
   uniforms = null
+  raycaster = null
+  localRay = null
+  inverseMatrix = null
+  pointerNdc = null
   nodeMaterials.length = 0
   nodeMarkerMaterials.length = 0
 }
@@ -613,7 +865,10 @@ onMounted(async () => {
 
   try {
     await Promise.race([
-      document.fonts.load('700 260px Oswald'),
+      Promise.all([
+        document.fonts.load('700 260px Oswald'),
+        document.fonts.load('500 30px "JetBrains Mono"'),
+      ]),
       new Promise((resolve) => window.setTimeout(resolve, 1400)),
     ])
     if (disposed) return
@@ -641,7 +896,7 @@ onBeforeUnmount(dispose)
       v-if="fallbackVisible"
       :text="text"
       class="absolute inset-0 h-full w-full transition-opacity duration-700"
-      :class="ready ? 'opacity-0' : 'opacity-100'"
+      :class="fallbackVisible ? 'opacity-100' : 'opacity-0'"
     />
 
     <div
@@ -659,13 +914,13 @@ onBeforeUnmount(dispose)
     >
       <span class="absolute left-1 top-1 flex items-center gap-1.5">
         <span class="h-1 w-1 bg-accent" />
-        FIELD / 03 NODES
+        CODE FIELD / 03 NODES
       </span>
       <span class="absolute right-1 top-1">THREE.JS / LIVE</span>
       <span class="absolute bottom-1 right-1">{{ pointCount.toLocaleString('en-US') }} PTS</span>
     </div>
 
-    <span class="sr-only">{{ text }} 点阵字标，由三个节点的轨道环绕。</span>
+    <span class="sr-only">{{ text }} 点云字标，由代码碎片与三个轨道节点组成。</span>
   </div>
 </template>
 
