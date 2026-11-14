@@ -27,12 +27,17 @@ export default defineConfig({
     assetsDir: 'assets',
     cssCodeSplit: true,
     sourcemap: false,
+    // three.js 是首屏按需加载的独立视觉模块（约 750 kB），
+    // 单独成块后并不影响首屏主包，因此放宽警告阈值而不是拆散它。
+    chunkSizeWarningLimit: 800,
     rollupOptions: {
       output: {
         // 手动分包：框架代码与图标库分开，业务代码更新时不会让整包失效
         manualChunks(id) {
           if (id.includes('node_modules')) {
             if (id.includes('@phosphor-icons')) return 'icons'
+            // three 只由首屏三维字标动态 import，单独成块，避免拖累主包
+            if (id.includes('/three/') || id.includes('three@')) return 'three'
             if (id.includes('vue') || id.includes('@vue')) return 'vue'
             return 'vendor'
           }

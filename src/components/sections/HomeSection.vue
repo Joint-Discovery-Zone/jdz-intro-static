@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { SiteContent } from '@/types/site'
 import AppButton from '@/components/ui/AppButton.vue'
-import DotMatrixWord from '@/components/background/DotMatrixWord.vue'
+import ThreeHeroWord from '@/components/background/ThreeHeroWord.vue'
 import SectionShell from '@/components/layout/SectionShell.vue'
 
 /**
  * 首页
- * 对齐参考页：左侧主张与两个入口，右侧整块点阵字；
+ * 对齐参考页：左侧主张与两个入口，右侧 Three.js 点云字标；
  * 大标题用系统无衬线 800 字重，只有点阵与微标签使用 Oswald / 等宽。
  */
 const props = defineProps<{
@@ -65,7 +65,7 @@ const meta = props.content.meta
         v-reveal="{ delay: 160, variant: 'right' }"
         class="relative order-first mx-auto h-[30vh] min-h-[200px] w-full max-w-[500px] min-[960px]:order-none min-[960px]:h-[55vh] min-[960px]:min-h-[380px] min-[960px]:max-w-none"
       >
-        <DotMatrixWord text="JDZone" class="h-full w-full" />
+        <ThreeHeroWord text="JDZone" />
         <span
           class="pointer-events-none absolute bottom-[10%] left-0 w-full text-center font-mono text-[10px] tracking-[0.5em] text-muted opacity-50"
           aria-hidden="true"
