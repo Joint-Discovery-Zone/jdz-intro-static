@@ -61,20 +61,19 @@ interface HeroUniforms {
 }
 
 /**
- * 代码碎片
- * 入场时从画面四边飞向字面，停稳后留在点云里，作为“由代码组成”的纹理。
+ * 入场用的代码精灵：每段代码从画面边缘飞向一个点阵点，
+ * 一路缩小到点的大小后淡出，不会留在静止画面里。
  * 每个 sprite 有独立的 canvas 纹理，数量控制在几十个，成本可控。
  */
-interface CodeToken {
+interface CodeFragment {
   sprite: Sprite
   material: SpriteMaterial
   start: Vector3
   target: Vector3
-  baseWidth: number
-  baseHeight: number
-  aspect: number
+  startWidth: number
+  startHeight: number
   delay: number
-  phase: number
+  spin: number
   tone: 'ink' | 'accent'
 }
 
@@ -98,7 +97,19 @@ const CODE_TOKENS = [
   'CSS',
   'fn()',
   '0101',
-  'readonly',
+  'props',
+  'state',
+  'hooks',
+  'vite',
+  'shader',
+  'frame',
+  'loop',
+  'parse',
+  'cache',
+  'lazy',
+  'merge',
+  'glsl',
+  '3D',
 ] as const
 
 const host = ref<HTMLElement | null>(null)
@@ -137,8 +148,10 @@ const pointerArea = { active: false, x: 0, y: 0 }
 const mouseTarget = { x: 0, y: 0 }
 const mouseLocal = { x: 9, y: 9 }
 const mouseLocalTarget = { x: 9, y: 9 }
-const tokens: CodeToken[] = []
-const tokenDisposables: Array<{ dispose: () => void }> = []
+// 代码碎片只在入场时存在，收拢到字面后缩成点并隐藏；
+// 静止状态下字标完全由点阵构成，不再叠一层文字。
+const fragments: CodeFragment[] = []
+const fragmentDisposables: Array<{ dispose: () => void }> = []
 const ringDisposables: Array<{ dispose: () => void }> = []
 const ringMaterials: Array<{ material: LineBasicMaterial; tone: 'ink' | 'accent' }> = []
 const nodeMaterials: Array<{ material: PointsMaterial; tone: 'accent' | 'signal' }> = []
@@ -247,7 +260,7 @@ function buildCircle(THREE: ThreeModule, radius: number, from: number, to: numbe
 }
 
 /** 把一段代码画成透明纹理，供 Sprite 使用；不同碎片共用同一套绘制逻辑 */
-function createTokenTexture(THREE: ThreeModule, text: string) {
+function createCodeTexture(THREE: ThreeModule, text: string) {
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')
   if (!ctx) return null
@@ -274,38 +287,26 @@ function createTokenTexture(THREE: ThreeModule, text: string) {
 }
 
 /**
- * 在字面位置撒几十个代码碎片。
- * 入场前它们分布在画面四边，随组装进度飞向目标位置；停稳后作为低频纹理留在字里。
+ * 一大把从四边飞入的代码碎片。
+ * 每段代码对应点阵里的一个目标点：从边缘的大字号，一路缩小，
+ * 到目标位置时只剩一个点的大小并淡出，让位给点云本身。
+ * 因此静止画面里没有残留的大段文字，字标完全由点阵构成。
  */
-function buildCodeTokens(THREE: ThreeModule, geometry: BufferGeometry, parent: Group) {
+function buildCodeFragments(THREE: ThreeModule, geometry: BufferGeometry, parent: Group) {
   const positions = geometry.getAttribute('position')
   const total = positions.count
-  const count = window.innerWidth < 720 ? 10 : 18
+  const count = window.innerWidth < 720 ? 36 : 64
   const group = new THREE.Group()
   group.renderOrder = 4
   parent.add(group)
-  // 碎片主要落在字的外缘，中心留出读字的空白；
-  // 同时保持最小间距，避免代码糊成一团噪声。
-  const placed: Vector3[] = []
 
   for (let i = 0; i < count; i += 1) {
-    let target: Vector3 | null = null
-    for (let attempt = 0; attempt < 22; attempt += 1) {
-      const index = Math.floor(Math.random() * total)
-      const candidate = new THREE.Vector3().fromBufferAttribute(positions, index)
-      candidate.z += 0.04
-      const nearEdge = Math.abs(candidate.x) > 0.82 || Math.abs(candidate.y) > 0.28
-      if (!nearEdge && attempt < 16) continue
-      if (placed.every((point) => point.distanceToSquared(candidate) > 0.26)) {
-        target = candidate
-        break
-      }
-    }
-    if (!target) continue
-    placed.push(target)
+    const index = Math.floor(Math.random() * total)
+    const target = new THREE.Vector3().fromBufferAttribute(positions, index)
+    target.z += 0.04
 
     const text = CODE_TOKENS[Math.floor(Math.random() * CODE_TOKENS.length)] ?? 'const'
-    const textureInfo = createTokenTexture(THREE, text)
+    const textureInfo = createCodeTexture(THREE, text)
     if (!textureInfo) continue
 
     const tone: 'ink' | 'accent' = Math.random() > 0.82 ? 'accent' : 'ink'
@@ -319,37 +320,39 @@ function buildCodeTokens(THREE: ThreeModule, geometry: BufferGeometry, parent: G
       toneMapped: false,
     })
     const sprite = new THREE.Sprite(material)
-    const baseHeight = 0.18 + Math.random() * 0.06
-    sprite.scale.set(baseHeight * textureInfo.aspect, baseHeight, 1)
+    // 起始字号明显大于最终点，才能看出“代码被拉进来”的过程。
+    // 手机画布矮，字号要相对更大，不然只剩一片噪点。
+    const narrow = window.innerWidth < 600
+    const startHeight = (narrow ? 0.66 : 0.46) + Math.random() * 0.28
+    const startWidth = startHeight * textureInfo.aspect
+    sprite.scale.set(startWidth, startHeight, 1)
     sprite.renderOrder = 4
 
-    // 四条边随机起飞，方向和字面位置相关，避免所有碎片从同一个角挤进来
+    // 从四边外面起步。它们在画布外时透明度为 0，等飞进来才渐渐显字，
+    // 因此不会出现“文字被边缘裁掉一截”的静止画面。
     const side = i % 4
-    const jitter = 0.8
+    const z = -0.5 + Math.random() * 1.1
     const start = new THREE.Vector3()
-    if (side === 0) start.set(-6.6, target.y * 1.3 + (Math.random() - 0.5) * jitter, -1.2 + Math.random() * 2.4)
-    else if (side === 1) start.set(6.6, target.y * 1.3 + (Math.random() - 0.5) * jitter, -1.2 + Math.random() * 2.4)
-    else if (side === 2) start.set(target.x * 1.2 + (Math.random() - 0.5) * jitter, 3.9, -1.2 + Math.random() * 2.4)
-    else start.set(target.x * 1.2 + (Math.random() - 0.5) * jitter, -3.9, -1.2 + Math.random() * 2.4)
+    if (side === 0) start.set(-2.6 - Math.random() * 0.6, (Math.random() - 0.5) * 3.4, z)
+    else if (side === 1) start.set(2.6 + Math.random() * 0.6, (Math.random() - 0.5) * 3.4, z)
+    else if (side === 2) start.set((Math.random() - 0.5) * 3.2, 1.7 + Math.random() * 0.5, z)
+    else start.set((Math.random() - 0.5) * 3.2, -1.7 - Math.random() * 0.5, z)
 
     sprite.position.copy(start)
-    // 初始很小，飞入过程中放大到最终字号
-    sprite.scale.multiplyScalar(0.35)
     group.add(sprite)
 
-    tokens.push({
+    fragments.push({
       sprite,
       material,
       start,
       target,
-      baseWidth: baseHeight * textureInfo.aspect,
-      baseHeight,
-      aspect: textureInfo.aspect,
-      delay: Math.random() * 0.3,
-      phase: Math.random() * Math.PI * 2,
+      startWidth,
+      startHeight,
+      delay: Math.random() * 0.32,
+      spin: (Math.random() - 0.5) * 0.12,
       tone,
     })
-    tokenDisposables.push(textureInfo.texture, material)
+    fragmentDisposables.push(textureInfo.texture, material)
   }
 }
 
@@ -584,8 +587,8 @@ function init(THREE: ThreeModule) {
   })
   if (nodeTexture) ringDisposables.push(nodeTexture)
 
-  // 代码碎片最后加，渲染在点云与轨道之上；它们从四边飞入后停成字面纹理
-  buildCodeTokens(THREE, geometry, assembly)
+  // 代码碎片只参与入场，收拢结束后全部隐藏，静止画面回到纯点阵
+  buildCodeFragments(THREE, geometry, assembly)
 
   // --- 尺寸 ---
   const mountSize = mount.getBoundingClientRect()
@@ -655,7 +658,7 @@ function syncColors() {
       readToken(tone === 'accent' ? '--c-accent' : '--c-signal-ink', tone === 'accent' ? '#c84630' : '#0b6b7f'),
     )
   })
-  tokens.forEach(({ material, tone }) => {
+  fragments.forEach(({ material, tone }) => {
     material.color.setStyle(readToken(tone === 'accent' ? '--c-accent' : '--c-fg', tone === 'accent' ? '#c84630' : '#16181c'))
   })
 }
@@ -794,20 +797,24 @@ function render(now: number) {
   mouseLocal.y += (mouseLocalTarget.y - mouseLocal.y) * follow
   uniforms.uMouse.value.set(mouseLocal.x, mouseLocal.y)
 
-  // 代码碎片：从四边飞入字面，停稳后留下低频漂移和微弱呼吸
-  for (const token of tokens) {
-    const progress = Math.min(1, Math.max(0, (entranceSeconds - token.delay) / 1.35))
-    const tokenEase = 1 - Math.pow(1 - progress, 3)
-    token.sprite.position.lerpVectors(token.start, token.target, tokenEase)
-    if (progress >= 1) {
-      token.sprite.position.x += Math.sin(elapsed * 0.32 + token.phase) * 0.012
-      token.sprite.position.y += Math.cos(elapsed * 0.28 + token.phase) * 0.01
-    }
-    const scaleFactor = 0.35 + tokenEase * 0.65
-    token.sprite.scale.set(token.baseWidth * scaleFactor, token.baseHeight * scaleFactor, 1)
-    const fadeIn = Math.min(1, Math.max(0, (progress - 0.02) / 0.22))
-    token.material.opacity =
-      fadeIn * fadeIn * (3 - 2 * fadeIn) * (0.72 + Math.sin(elapsed * 0.7 + token.phase) * 0.06)
+  // 代码碎片：从四边飞向各自的点，持续缩小，最后一帧缩成一个点并隐藏。
+  // 这样退场后只留下点阵，不再有大段文字压住字面。
+  for (const fragment of fragments) {
+    const progress = Math.min(1, Math.max(0, (entranceSeconds - fragment.delay) / 1.45))
+    const moveEase = 1 - Math.pow(1 - progress, 3)
+    fragment.sprite.position.lerpVectors(fragment.start, fragment.target, moveEase)
+
+    // 从大字号一路缩到点的大小
+    const shrink = 1 - moveEase * 0.985
+    fragment.sprite.scale.set(fragment.startWidth * shrink, fragment.startHeight * shrink, 1)
+    fragment.material.rotation = fragment.spin * (1 - moveEase)
+
+    // 等它飞进画面后再显字，避免在边界上被裁成半截
+    const fadeIn = Math.min(1, Math.max(0, (progress - 0.08) / 0.26))
+    const smoothIn = fadeIn * fadeIn * (3 - 2 * fadeIn)
+    const fadeOut = 1 - Math.min(1, Math.max(0, (progress - 0.78) / 0.22))
+    fragment.material.opacity = smoothIn * fadeOut * 0.94
+    fragment.sprite.visible = progress < 0.999
   }
 
   renderer.render(scene, camera)
@@ -827,9 +834,9 @@ function dispose() {
   intersectionObserver?.disconnect()
   ringDisposables.forEach((item) => item.dispose())
   ringDisposables.length = 0
-  tokenDisposables.forEach((item) => item.dispose())
-  tokenDisposables.length = 0
-  tokens.length = 0
+  fragmentDisposables.forEach((item) => item.dispose())
+  fragmentDisposables.length = 0
+  fragments.length = 0
   if (renderer) {
     renderer.dispose()
     renderer.forceContextLoss()
