@@ -5,6 +5,7 @@ import type { Member, SiteContent } from '@/types/site'
 import { useSwipe } from '@/composables/useSwipe'
 import ChapterHeading from '@/components/ui/ChapterHeading.vue'
 import SectionShell from '@/components/layout/SectionShell.vue'
+import MemberAvatar from './MemberAvatar.vue'
 import MemberVisual from './MemberVisual.vue'
 
 /**
@@ -128,9 +129,9 @@ useSwipe(
             </span>
           </div>
 
-          <div class="relative grid h-[60px] w-[60px] place-items-center border border-line bg-panel notch">
-            <span class="absolute inset-[3px] border border-line" aria-hidden="true" />
-            <span class="font-display text-2xl font-bold text-muted">{{ current.letter }}</span>
+          <div class="relative grid h-[60px] w-[60px] place-items-center overflow-hidden border border-line bg-panel notch">
+            <MemberAvatar :member="current" variant="profile" />
+            <span class="pointer-events-none absolute inset-[3px] z-10 border border-line" aria-hidden="true" />
           </div>
         </article>
       </Transition>
@@ -163,7 +164,12 @@ useSwipe(
         @click="select(index)"
         @keydown="onTabKeydown($event, index)"
       >
-        <span class="mb-auto block h-8 w-8 bg-line notch-sm" aria-hidden="true" />
+        <span
+          class="mb-auto block h-9 w-9 overflow-hidden border border-line/80 bg-paper/40 notch-sm"
+          aria-hidden="true"
+        >
+          <MemberAvatar :member="member" variant="thumb" :active="selected === index" />
+        </span>
         <span class="font-display text-[10px] leading-none text-signal-ink">{{ member.serial }}</span>
         <span class="mt-1 text-[12px] font-bold leading-[1.2]">{{ member.nameCn }}</span>
         <span class="mt-0.5 font-mono text-[8px] leading-none tracking-[0.12em] text-muted">

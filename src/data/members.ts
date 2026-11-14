@@ -2,8 +2,9 @@ import type { Member, Principle } from '@/types/site'
 
 /**
  * 成员档案
- * 参考页没有成员照片，这里也不伪造人像：右侧用档案板承载首字母与编号，
- * 以后有真实头像时给 Member 增加 avatar 字段即可。
+ * 参考页没有成员照片，这里也不伪造人像：右侧用档案板承载首字母与编号。
+ * 以后有真实图片时，给成员补 avatar（1:1 头像）与 visual（右侧大图）字段；
+ * 缺省或加载失败会自动退回首字母 / 档案板，不会出现裂图或空洞。
  */
 export const members: Member[] = [
   {

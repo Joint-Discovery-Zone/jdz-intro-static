@@ -27,6 +27,19 @@ export interface SiteMeta {
   location: string
 }
 
+/**
+ * 成员图片
+ * 图片放在 public/images/members/ 下，src 用站内绝对路径。
+ * focus 对应 CSS object-position，用来在裁切时保住脸或画面重心。
+ */
+export interface MemberImage {
+  src: string
+  /** 描述图片内容；纯装饰图可以为空字符串 */
+  alt: string
+  /** 例如 '50% 35%'，默认居中 */
+  focus?: string
+}
+
 /** 成员档案：字段与参考页的档案板一一对应 */
 export interface Member {
   id: string
@@ -42,6 +55,10 @@ export interface Member {
   letter: string
   desc: string
   tags: string[]
+  /** 小头像：档案卡与缩略图共用，建议 1:1 */
+  avatar?: MemberImage
+  /** 右侧大图：不必是人像，建议 4:3 或 3:2 的氛围图 / 作品图 */
+  visual?: MemberImage
 }
 
 /** 工作原则：关于页右侧的 + 列表 */

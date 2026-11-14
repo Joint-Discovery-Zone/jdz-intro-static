@@ -1,20 +1,48 @@
 <script setup lang="ts">
+import { computed, ref, watch } from 'vue'
 import type { Member } from '@/types/site'
 import HudFrame from '@/components/ui/HudFrame.vue'
 
 /**
  * 成员视觉板
  * 参考页在右侧预留了人物立绘位，但交付时是空占位框。
- * 这里不伪造照片，改成一块有内容的「档案板」：
- * 空心首字母、对角定位线、编号与职能，既有信息也不冒充人像。
+ * 没有图片时是一块有内容的「档案板」；有 visual 时照片成为底图，
+ * 空心首字母、扫描线和 HUD 标签留在上层，保证两种状态都是同一套视觉。
  */
-defineProps<{
+const props = defineProps<{
   member: Member
 }>()
+
+const imageFailed = ref(false)
+const hasVisual = computed(() => Boolean(props.member.visual) && !imageFailed.value)
+
+// 切换成员时重新尝试新图，避免上一张失败后一直显示降级
+watch(
+  () => props.member.visual?.src,
+  () => {
+    imageFailed.value = false
+  },
+)
 </script>
 
 <template>
-  <div class="relative flex h-full min-h-[320px] w-full items-center justify-center overflow-hidden">
+  <div
+    class="member-visual group relative flex h-full min-h-[320px] w-full items-center justify-center overflow-hidden"
+    :class="{ 'member-visual--photo': hasVisual }"
+  >
+    <!-- 大图只做底图：灰度、压暗、上下渐隐，避免照片抢走档案文字 -->
+    <img
+      v-if="hasVisual"
+      :src="member.visual!.src"
+      :alt="member.visual!.alt"
+      :style="{ objectPosition: member.visual!.focus ?? '50% 50%' }"
+      loading="lazy"
+      decoding="async"
+      class="member-visual__photo"
+      @error="imageFailed = true"
+    />
+    <div v-if="hasVisual" class="member-visual__scrim" aria-hidden="true" />
+
     <div class="hud-grid absolute inset-0 opacity-70" aria-hidden="true" />
 
     <!-- 缓慢下移的扫描线，给静态档案板一点“在线”的感觉 -->
