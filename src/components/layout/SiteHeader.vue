@@ -1,17 +1,16 @@
 <script setup lang="ts">
-import { PhList } from '@phosphor-icons/vue'
-import { ref } from 'vue'
-import type { SectionMeta } from '@/types/site'
-import BrandSeal from '@/components/ui/BrandSeal.vue'
+import { PhArrowUpRight, PhList } from '@phosphor-icons/vue'
+import { computed, ref } from 'vue'
+import type { SectionId, SectionMeta } from '@/types/site'
 import ThemeToggle from '@/components/ui/ThemeToggle.vue'
 import MobileNav from './MobileNav.vue'
 
 /**
- * 固定页眉
- * 结构对齐参考页：品牌 / SYS.ONLINE / CONTACT / 主题开关。
- * 参考页在窄屏直接删掉导航，这里补一个菜单按钮，1280px 以下都能打开章节列表。
+ * 电影感固定页眉
+ * 结构对齐参考图：斜切 JDZ 字标 / 居中的五个章节 / 右侧 EXPLORE TOGETHER。
+ * 页面滚动在内部 .scroller 中完成，所以这里用 fixed 即可始终压在主视觉上。
  */
-defineProps<{
+const props = defineProps<{
   sections: SectionMeta[]
   activeIndex: number
   email: string
@@ -20,6 +19,16 @@ defineProps<{
 const emit = defineEmits<{ navigate: [id: string] }>()
 
 const menuOpen = ref(false)
+
+const navItems = [
+  { id: 'home' as SectionId, label: 'HOME' },
+  { id: 'members' as SectionId, label: 'THE THREE' },
+  { id: 'project' as SectionId, label: 'PROJECTS' },
+  { id: 'log' as SectionId, label: 'JOURNAL' },
+  { id: 'about' as SectionId, label: 'ABOUT' },
+]
+
+const activeId = computed(() => props.sections[props.activeIndex]?.id ?? 'home')
 
 function go(id: string) {
   emit('navigate', id)
@@ -33,43 +42,57 @@ function handleMenuNavigate(id: string) {
 
 <template>
   <header
-    class="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b border-line bg-paper px-5 py-4 sm:px-10 sm:py-5"
+    class="cinema-header fixed inset-x-0 top-0 z-50 flex h-20 items-center justify-between px-5 sm:px-8 lg:px-12 xl:px-16"
+    :class="{ 'is-home': activeId === 'home' }"
   >
     <button
       type="button"
-      class="group flex cursor-pointer items-center gap-[11px] focus-clip"
+      class="group flex cursor-pointer items-center gap-3 focus-clip"
       aria-label="回到首页"
       @click="go('home')"
     >
-      <BrandSeal size="sm" />
-      <span class="flex items-baseline gap-2.5">
-        <span class="text-[15px] font-bold tracking-[0.02em]">JDZone</span>
-        <span class="hidden font-mono text-[10px] tracking-[0.22em] text-muted sm:inline">
-          JOINT DISCOVERY ZONE
+      <span class="cinema-mark" aria-hidden="true"><span>JDZ</span></span>
+      <span class="flex flex-col items-start leading-none">
+        <span class="text-[19px] font-semibold tracking-[-0.02em] text-white">JDZone</span>
+        <span class="mt-1 hidden font-mono text-[8px] uppercase tracking-[0.28em] text-white/42 sm:block">
+          Joint Discovery Zone
         </span>
       </span>
     </button>
 
-    <div class="flex items-center gap-4">
-      <!-- 系统状态：参考页用朱红点 + 灰字，而不是高饱和青色文字 -->
-      <span class="hidden items-center gap-2 font-mono text-[10px] tracking-[0.1em] text-muted min-[721px]:flex">
-        <span class="relative h-1.5 w-1.5 rounded-full bg-accent pulse-dot" aria-hidden="true" />
-        SYS.ONLINE
-      </span>
+    <nav class="hidden items-center gap-8 lg:flex xl:gap-11" aria-label="主导航">
+      <button
+        v-for="item in navItems"
+        :key="item.id"
+        type="button"
+        class="cinema-nav-link"
+        :class="{ 'is-active': activeId === item.id }"
+        :aria-current="activeId === item.id ? 'page' : undefined"
+        @click="go(item.id)"
+      >
+        {{ item.label }}
+      </button>
+    </nav>
 
+    <div class="flex items-center gap-3 sm:gap-5">
       <button
         type="button"
-        class="top-btn hidden items-center justify-center border border-line px-4 py-1.5 font-mono text-[11px] font-bold tracking-[0.1em] text-ink transition-colors duration-300 hover:border-accent hover:bg-accent hover:text-white focus-clip notch-sm min-[721px]:inline-flex"
+        class="group hidden items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.18em] text-white/68 transition-colors hover:text-white sm:flex"
         @click="go('contact')"
       >
-        CONTACT
+        EXPLORE TOGETHER
+        <PhArrowUpRight
+          :size="13"
+          class="text-accent transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+          aria-hidden="true"
+        />
       </button>
 
       <ThemeToggle />
 
       <button
         type="button"
-        class="grid h-8 w-8 cursor-pointer place-items-center border border-line text-ink transition-colors hover:border-accent hover:text-accent focus-clip notch-sm xl:hidden"
+        class="grid h-9 w-9 cursor-pointer place-items-center border border-white/20 text-white transition-colors hover:border-accent hover:text-accent focus-clip lg:hidden"
         :aria-expanded="menuOpen"
         aria-controls="mobile-nav"
         aria-label="打开章节菜单"

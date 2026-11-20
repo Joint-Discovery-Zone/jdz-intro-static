@@ -19,8 +19,8 @@ export type Theme = 'light' | 'dark'
 const STORAGE_KEY = 'jdz-theme'
 
 function readTheme(): Theme {
-  if (typeof document === 'undefined') return 'light'
-  return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'
+  if (typeof document === 'undefined') return 'dark'
+  return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'
 }
 
 const theme = ref<Theme>(readTheme())
@@ -40,7 +40,7 @@ function applyTheme(next: Theme, persist = true) {
     // 移动端地址栏颜色也同步，避免切到深色后顶部仍是浅色
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute('content', next === 'dark' ? '#08090b' : '#f7f6f4')
+      ?.setAttribute('content', next === 'dark' ? '#05080c' : '#eef1f2')
   }
 
   if (!persist) return
@@ -84,7 +84,7 @@ export function useTheme() {
       const flash = document.createElement('div')
       flash.className = 'theme-flash'
       flash.setAttribute('aria-hidden', 'true')
-      flash.style.background = isDark.value ? '#08090b' : '#f7f6f4'
+      flash.style.background = isDark.value ? '#05080c' : '#eef1f2'
       document.body.appendChild(flash)
 
       applyTheme(next)

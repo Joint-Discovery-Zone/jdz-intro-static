@@ -2,7 +2,6 @@
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { PhArrowRight, PhX } from '@phosphor-icons/vue'
 import type { SectionMeta } from '@/types/site'
-import BrandSeal from '@/components/ui/BrandSeal.vue'
 
 /**
  * 移动端章节菜单
@@ -68,45 +67,47 @@ onBeforeUnmount(() => setScrollLock(false))
   <dialog
     id="mobile-nav"
     ref="dialog"
-    class="mobile-nav m-0 h-[100dvh] max-h-none w-full max-w-none border-0 bg-paper p-0 text-ink backdrop:bg-black/55"
+    class="mobile-nav m-0 h-[100dvh] max-h-none w-full max-w-none border-0 bg-[#05080c] p-0 text-white backdrop:bg-black/70"
     aria-label="章节菜单"
     @close="handleNativeClose"
     @cancel="close"
     @click="handleBackdropClick"
   >
     <div class="flex h-full flex-col">
-      <div class="flex h-16 shrink-0 items-center justify-between border-b border-line px-4">
+      <div class="flex h-20 shrink-0 items-center justify-between border-b border-white/10 px-5">
         <span class="flex items-center gap-3">
-          <BrandSeal />
-          <span class="text-[17px] font-bold tracking-[0.02em]">JDZone</span>
+          <span class="cinema-mark" aria-hidden="true"><span>JDZ</span></span>
+          <span class="text-[19px] font-semibold tracking-[-0.02em]">JDZone</span>
         </span>
 
         <button
           type="button"
           data-menu-close
-          class="grid h-9 w-9 cursor-pointer place-items-center notch-sm border border-line text-ink transition-colors hover:border-accent-line hover:text-accent focus-clip"
+          class="grid h-9 w-9 cursor-pointer place-items-center border border-white/20 text-white transition-colors hover:border-accent hover:text-accent focus-clip"
           aria-label="关闭章节菜单"
           @click="close"
         >
-          <PhX :size="17" aria-hidden="true" />
+          <PhX :size="16" aria-hidden="true" />
         </button>
       </div>
 
-      <nav class="flex-1 overflow-y-auto px-4 py-6" aria-label="章节导航">
-        <p class="label-mono mb-3 text-muted" aria-hidden="true">INDEX / {{ String(sections.length).padStart(2, '0') }} CHAPTERS</p>
+      <nav class="flex-1 overflow-y-auto px-5 py-7" aria-label="章节导航">
+        <p class="mb-4 font-mono text-[9px] uppercase tracking-[0.28em] text-white/40" aria-hidden="true">
+          INDEX / {{ String(sections.length).padStart(2, '0') }} CHAPTERS
+        </p>
 
         <ul>
           <li v-for="(section, index) in sections" :key="section.id">
             <button
               type="button"
-              class="group flex w-full cursor-pointer items-center gap-4 border-b border-line py-4 text-left focus-clip"
+              class="group flex w-full cursor-pointer items-center gap-4 border-b border-white/10 py-4 text-left focus-clip"
               :aria-current="index === activeIndex ? 'step' : undefined"
               :aria-label="`第 ${section.index} 章，${section.label}`"
               @click="go(section.id)"
             >
               <span
-                class="display-num w-9 text-2xl"
-                :class="index === activeIndex ? 'text-accent' : 'text-muted'"
+                class="w-8 font-mono text-[11px] tracking-[0.12em]"
+                :class="index === activeIndex ? 'text-accent' : 'text-white/35'"
                 aria-hidden="true"
               >
                 {{ section.index }}
@@ -114,29 +115,29 @@ onBeforeUnmount(() => setScrollLock(false))
 
               <span class="flex-1">
                 <span
-                  class="block font-display text-[22px] font-semibold uppercase leading-none tracking-[0.04em]"
-                  :class="index === activeIndex ? 'text-accent' : 'text-ink'"
+                  class="block font-display text-[26px] font-semibold uppercase leading-none tracking-[0.02em]"
+                  :class="index === activeIndex ? 'text-accent' : 'text-white'"
                 >
                   {{ section.labelEn }}
                 </span>
-                <span class="mt-1.5 block text-xs text-muted">{{ section.label }}</span>
+                <span class="mt-1.5 block text-xs text-white/42">{{ section.label }}</span>
               </span>
 
               <PhArrowRight
                 :size="15"
                 aria-hidden="true"
-                class="text-muted transition-transform duration-300 ease-brand group-hover:translate-x-1 group-hover:text-accent"
+                class="text-white/30 transition-transform duration-300 ease-brand group-hover:translate-x-1 group-hover:text-accent"
               />
             </button>
           </li>
         </ul>
       </nav>
 
-      <div class="shrink-0 border-t border-line px-4 py-5">
-        <p class="label-mono text-muted">OPEN CHANNEL</p>
+      <div class="shrink-0 border-t border-white/10 px-5 py-5">
+        <p class="font-mono text-[9px] uppercase tracking-[0.28em] text-white/40">OPEN CHANNEL</p>
         <a
           :href="`mailto:${email}`"
-          class="link-line mt-2 inline-block text-sm text-ink"
+          class="mt-2 inline-block font-mono text-xs text-white/80 transition-colors hover:text-accent"
         >
           {{ email }}
         </a>

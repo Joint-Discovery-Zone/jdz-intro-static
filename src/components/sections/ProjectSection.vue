@@ -29,7 +29,7 @@ function dotClass(state: PhaseState) {
 
 <template>
   <SectionShell heading-id="project-title">
-    <ChapterHeading index="04" title="项目进展" label-en="PROJECT" heading-id="project-title" />
+    <ChapterHeading index="03" title="项目进展" label-en="PROJECTS" heading-id="project-title" />
 
     <div class="mt-7 grid gap-10 min-[960px]:grid-cols-[1fr_0.95fr] min-[960px]:gap-14">
       <div v-reveal="{ variant: 'left' }" class="min-w-0">

@@ -73,7 +73,13 @@ useSwipe(
 
 <template>
   <SectionShell heading-id="members-title">
-    <ChapterHeading index="03" label-en="OPERATORS" heading-id="members-title" sr-title="成员档案" />
+    <ChapterHeading
+      index="02"
+      title="THE THREE"
+      label-en="OPERATORS"
+      heading-id="members-title"
+      sr-title="成员档案"
+    />
 
     <div
       ref="stageRef"

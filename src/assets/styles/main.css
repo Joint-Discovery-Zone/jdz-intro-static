@@ -39,25 +39,27 @@
 
 @layer base {
   :root {
-    color-scheme: light;
+    color-scheme: dark;
 
-    --c-bg: #f7f6f4;
-    --c-fg: #16181c;
-    --c-dim: #5d646c;
-    --c-line: rgba(22, 24, 28, 0.12);
-    --c-line-strong: rgba(22, 24, 28, 0.26);
-    --c-card: rgba(22, 24, 28, 0.028);
-    --c-grid: rgba(22, 24, 28, 0.05);
+    /* 电影感深色底：近黑的冷蓝，而不是纯黑，保留照片里的空气感 */
+    --c-bg: #05080c;
+    --c-fg: #f2f5f7;
+    --c-dim: #8d99a5;
+    --c-line: rgba(242, 245, 247, 0.13);
+    --c-line-strong: rgba(242, 245, 247, 0.3);
+    --c-card: rgba(242, 245, 247, 0.045);
+    --c-grid: rgba(242, 245, 247, 0.045);
 
-    --c-accent: #c84630;
-    --c-accent-soft: rgba(200, 70, 48, 0.09);
-    --c-accent-line: rgba(200, 70, 48, 0.3);
-    --c-on-accent: #ffffff;
+    /* 全站唯一强调色：参考图里的酸性黄 */
+    --c-accent: #e8f33c;
+    --c-accent-soft: rgba(232, 243, 60, 0.12);
+    --c-accent-line: rgba(232, 243, 60, 0.38);
+    --c-on-accent: #080b0e;
 
-    /* 青色只作为信号色：装饰用 --c-signal，文字用 --c-signal-ink 以保证对比度 */
-    --c-signal: #19d1ff;
-    --c-signal-ink: #0b6b7f;
-    --c-signal-soft: rgba(25, 209, 255, 0.12);
+    /* 旧的「信号色」统一并入强调色，避免第二套色相 */
+    --c-signal: #e8f33c;
+    --c-signal-ink: #e8f33c;
+    --c-signal-soft: rgba(232, 243, 60, 0.12);
 
     --f-sans:
       -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
@@ -66,27 +68,29 @@
       'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', 'PingFang SC',
       'Microsoft YaHei', monospace;
     --f-display: 'Oswald', 'Impact', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    --f-hero: 'Archivo Black', 'Arial Black', 'Oswald', 'Impact', sans-serif;
   }
 
-  [data-theme='dark'] {
-    color-scheme: dark;
+  /* 日间主题：保留切换能力，但把酸性黄降到橄榄色以保证浅底上的文字对比度 */
+  [data-theme='light'] {
+    color-scheme: light;
 
-    --c-bg: #08090b;
-    --c-fg: #f3f1ea;
-    --c-dim: #9aa0a7;
-    --c-line: rgba(243, 241, 234, 0.14);
-    --c-line-strong: rgba(243, 241, 234, 0.3);
-    --c-card: rgba(243, 241, 234, 0.04);
-    --c-grid: rgba(243, 241, 234, 0.035);
+    --c-bg: #edf0f1;
+    --c-fg: #0b0f13;
+    --c-dim: #4f5861;
+    --c-line: rgba(11, 15, 19, 0.15);
+    --c-line-strong: rgba(11, 15, 19, 0.32);
+    --c-card: rgba(11, 15, 19, 0.035);
+    --c-grid: rgba(11, 15, 19, 0.06);
 
-    --c-accent: #e0573f;
-    --c-accent-soft: rgba(224, 87, 63, 0.14);
-    --c-accent-line: rgba(224, 87, 63, 0.38);
-    --c-on-accent: #0a0b0d;
+    --c-accent: #6c7600;
+    --c-accent-soft: rgba(108, 118, 0, 0.1);
+    --c-accent-line: rgba(108, 118, 0, 0.32);
+    --c-on-accent: #f8faef;
 
-    --c-signal: #19d1ff;
-    --c-signal-ink: #62e3ff;
-    --c-signal-soft: rgba(25, 209, 255, 0.14);
+    --c-signal: #6c7600;
+    --c-signal-ink: #596100;
+    --c-signal-soft: rgba(108, 118, 0, 0.1);
   }
 
   html {
@@ -237,7 +241,8 @@
     overflow-y: auto;
     overscroll-behavior-y: contain;
     scroll-behavior: smooth;
-    scroll-snap-type: y mandatory;
+    /* 电影感长页：自由滚动，章节仍保持整屏呼吸，但不强制吸附 */
+    scroll-snap-type: none;
     scrollbar-width: none;
   }
 
@@ -247,15 +252,6 @@
 
   .snap-section {
     min-height: 100dvh;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-  }
-
-  /* 小屏与矮屏上，整屏吸附容易把内容卡在半截，退化为就近吸附 */
-  @media (max-width: 1023px), (max-height: 720px) {
-    .scroller {
-      scroll-snap-type: y proximity;
-    }
   }
 
   /*
@@ -263,7 +259,8 @@
    * 锁在最外层，组件本身就不必各写一份 overflow 逻辑。
    */
   html.booting .scroller,
-  html.menu-open .scroller {
+  html.menu-open .scroller,
+  html.intro-open .scroller {
     overflow: hidden;
   }
 
@@ -684,13 +681,13 @@
     inset: 0;
     z-index: 99999;
     pointer-events: none;
-    background: #f7f6f4;
+    background: #edf0f1;
     will-change: clip-path;
     contain: strict;
   }
 
   .theme-wipe[data-to='dark'] {
-    background: #08090b;
+    background: #05080c;
   }
 
   .theme-fx {
@@ -850,11 +847,11 @@
     inset: 0;
     z-index: 99999;
     pointer-events: none;
-    background: #f7f6f4;
+    background: #edf0f1;
   }
 
   .theme-flash[data-to='dark'] {
-    background: #08090b;
+    background: #05080c;
   }
 
   /* ---------- 启动页 ---------- */
@@ -960,6 +957,354 @@
   @keyframes sheen {
     to {
       background-position: -120% 0;
+    }
+  }
+
+  /* ---------- 电影感首页 ---------- */
+  .cinema-hero {
+    position: relative;
+    isolation: isolate;
+    min-height: 100dvh;
+    overflow: hidden;
+    background: #05080c;
+    /* 主视觉始终是深色照片，不随浅色主题把强调色换成橄榄绿 */
+    --c-accent: #e8f33c;
+    --c-on-accent: #080b0e;
+  }
+
+  .cinema-hero__media {
+    position: absolute;
+    inset: -4%;
+    z-index: -3;
+    transform: translate3d(var(--mx, 0px), var(--my, 0px), 0) scale(1.03);
+    transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+  }
+
+  .cinema-hero__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 58% 48%;
+    filter: saturate(0.9) contrast(1.03) brightness(1.04);
+  }
+
+  /* 左侧暗部保证白色大字可读，右侧城市保留细节 */
+  .cinema-hero__grade {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    background:
+      linear-gradient(90deg, rgba(3, 6, 10, 0.86) 0%, rgba(3, 6, 10, 0.58) 34%, rgba(3, 6, 10, 0.12) 68%, rgba(3, 6, 10, 0.04) 100%),
+      linear-gradient(180deg, rgba(3, 6, 10, 0.6) 0%, transparent 24%, transparent 64%, rgba(3, 6, 10, 0.55) 100%);
+  }
+
+  /* 轻微颗粒与扫描线，让照片和 DOM 文字落在同一个胶片表面 */
+  .cinema-hero__grain {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.16;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+  }
+
+  .hero-headline {
+    font-family: var(--f-hero);
+    font-weight: 400;
+    text-transform: uppercase;
+    color: #f4f6f7;
+    font-size: clamp(48px, 6.4vw, 98px);
+    line-height: 0.87;
+    letter-spacing: -0.028em;
+    text-wrap: nowrap;
+  }
+
+  /* ZONE 后面的黄色斜块，是参考图里最有辨识度的锚点 */
+  .hero-slash {
+    display: inline-block;
+    width: 0.42em;
+    height: 0.63em;
+    margin-left: 0.1em;
+    background: var(--c-accent);
+    transform: skewX(-17deg) translateY(-0.02em);
+    vertical-align: 0.02em;
+  }
+
+  .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--c-accent);
+    color: var(--c-on-accent);
+    padding: 16px 26px;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    transform: skewX(-12deg);
+    transition:
+      background-color 0.3s var(--ease-brand),
+      transform 0.3s var(--ease-brand),
+      box-shadow 0.3s var(--ease-brand);
+    box-shadow: 0 18px 48px rgba(232, 243, 60, 0.16);
+  }
+
+  .hero-cta > span {
+    transform: skewX(12deg);
+  }
+
+  .hero-cta:hover {
+    background: #f4ff70;
+    transform: skewX(-12deg) translateY(-2px);
+    box-shadow: 0 22px 58px rgba(232, 243, 60, 0.26);
+  }
+
+  .hero-play {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    color: #d8dfe4;
+    font-family: var(--f-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .hero-play__ring {
+    display: grid;
+    width: 46px;
+    height: 46px;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.38);
+    border-radius: 999px;
+    transition:
+      border-color 0.3s var(--ease-brand),
+      color 0.3s var(--ease-brand),
+      transform 0.3s var(--ease-brand);
+  }
+
+  .hero-play:hover .hero-play__ring {
+    border-color: var(--c-accent);
+    color: var(--c-accent);
+    transform: scale(1.06);
+  }
+
+  .hero-index {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: rgba(242, 245, 247, 0.65);
+  }
+
+  .hero-corner-bar {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: min(280px, 34vw);
+    height: 74px;
+    pointer-events: none;
+  }
+
+  .hero-corner-bar::before,
+  .hero-corner-bar::after {
+    content: '';
+    position: absolute;
+    right: 30px;
+    bottom: 30px;
+    width: 86px;
+    height: 16px;
+    background: var(--c-accent);
+    transform: skewX(-38deg);
+  }
+
+  .hero-corner-bar::after {
+    right: 112px;
+    width: 18px;
+    opacity: 0.75;
+    box-shadow: -18px 0 0 rgba(232, 243, 60, 0.42);
+  }
+
+  /* 手机弹层里的点云字标按可用宽度收敛，避免右侧被裁切 */
+  @media (max-width: 639px) {
+    .intro-stage {
+      transform: scale(0.86);
+      transform-origin: center;
+    }
+  }
+
+  /* ---------- 页眉 ---------- */
+  .cinema-header {
+    background: linear-gradient(180deg, rgba(3, 6, 10, 0.72) 0%, rgba(3, 6, 10, 0.3) 58%, transparent 100%);
+  }
+
+  /* 浅色主题下章节背景变亮，页眉必须自带深色底，白色导航才读得清 */
+  [data-theme='light'] .cinema-header {
+    background: rgba(5, 8, 12, 0.9);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(14px);
+    /* 页眉落在深色底上，保持酸性黄，而不是浅色主题的橄榄绿 */
+    --c-accent: #e8f33c;
+    --c-on-accent: #080b0e;
+  }
+
+  /* 浅色主题的首页顶部仍是深色照片，页眉保持透明更接近参考图 */
+  [data-theme='light'] .cinema-header.is-home {
+    background: linear-gradient(180deg, rgba(3, 6, 10, 0.72) 0%, rgba(3, 6, 10, 0.3) 58%, transparent 100%);
+    border-bottom-color: transparent;
+    backdrop-filter: none;
+  }
+
+  /* 浅色主题的章节网格不需要那么亮 */
+  [data-theme='light'] .cinema-section::before {
+    opacity: 0.14;
+  }
+
+  /* 页眉中的主题按钮始终落在深色照片/深色页眉上 */
+  .cinema-header .theme-btn {
+    border-color: rgba(255, 255, 255, 0.22) !important;
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.82) !important;
+  }
+
+  .cinema-header .theme-btn:hover {
+    border-color: #e8f33c !important;
+    color: #e8f33c !important;
+  }
+
+  .cinema-nav-link {
+    position: relative;
+    padding-block: 6px;
+    font-family: var(--f-mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(242, 245, 247, 0.72);
+    transition: color 0.25s var(--ease-brand);
+  }
+
+  .cinema-nav-link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: var(--c-accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s var(--ease-brand);
+  }
+
+  .cinema-nav-link:hover,
+  .cinema-nav-link.is-active {
+    color: #f5f7f8;
+  }
+
+  .cinema-nav-link.is-active::after,
+  .cinema-nav-link:hover::after {
+    transform: scaleX(1);
+  }
+
+  /* J D Z 斜切字标 */
+  .cinema-mark {
+    position: relative;
+    display: inline-grid;
+    height: 34px;
+    width: 46px;
+    place-items: center;
+    overflow: hidden;
+    color: var(--c-accent);
+    font-family: var(--f-display);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .cinema-mark::before,
+  .cinema-mark::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    background: var(--c-accent);
+    transform: skewX(-18deg);
+  }
+
+  .cinema-mark::before {
+    left: 2px;
+  }
+
+  .cinema-mark::after {
+    left: 10px;
+    opacity: 0.55;
+  }
+
+  .cinema-mark > span {
+    position: relative;
+    padding-left: 14px;
+  }
+
+  /* ---------- 后续章节 ---------- */
+  .cinema-section {
+    position: relative;
+    border-top: 1px solid var(--c-line);
+    background:
+      radial-gradient(120% 80% at 85% 0%, rgba(232, 243, 60, 0.035), transparent 55%),
+      var(--c-bg);
+  }
+
+  /* 深色页脚与移动菜单不跟随浅色主题的橄榄绿强调色 */
+  .site-footer,
+  .mobile-nav {
+    --c-accent: #e8f33c;
+    --c-on-accent: #080b0e;
+  }
+
+  .cinema-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.32;
+    background-image: linear-gradient(var(--c-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--c-grid) 1px, transparent 1px);
+    background-size: 96px 96px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent 78%);
+  }
+
+  /* ---------- 首页预告层 ---------- */
+  .intro-dialog {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    width: min(1180px, calc(100vw - 32px));
+    max-height: min(760px, calc(100dvh - 32px));
+    padding: 0;
+    border: 1px solid rgba(242, 245, 247, 0.18);
+    background: #05080c;
+    color: #f2f5f7;
+    overflow: hidden;
+  }
+
+  .intro-dialog::backdrop {
+    background: rgba(2, 4, 7, 0.86);
+    backdrop-filter: blur(8px);
+  }
+
+  .intro-dialog[open] {
+    animation: intro-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes intro-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(14px);
     }
   }
 

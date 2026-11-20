@@ -5,7 +5,7 @@ export const siteMeta: SiteMeta = {
   name: 'JDZone',
   fullName: 'Joint Discovery Zone',
   tagline: '一起发现 · 一起构建',
-  description: 'JDZone 是一个专注软件工程实践的三⼈小组。我们在协作中打磨产品，在迭代中验证想法。',
+  description: 'JDZone 是一个专注软件工程实践的三人小组。我们在协作中打磨产品，在迭代中验证想法。',
   email: 'hello@JDZone.top',
   founded: '2026',
   version: 'v1.0.0',
@@ -18,9 +18,9 @@ export const siteMeta: SiteMeta = {
  */
 export const sections: SectionMeta[] = [
   { id: 'home', index: '01', label: '首页', labelEn: 'HOME' },
-  { id: 'about', index: '02', label: '关于', labelEn: 'ABOUT' },
-  { id: 'members', index: '03', label: '成员', labelEn: 'OPERATORS' },
-  { id: 'project', index: '04', label: '项目', labelEn: 'PROJECT' },
-  { id: 'log', index: '05', label: '日志', labelEn: 'CHANGELOG' },
+  { id: 'members', index: '02', label: '成员', labelEn: 'THE THREE' },
+  { id: 'project', index: '03', label: '项目', labelEn: 'PROJECTS' },
+  { id: 'log', index: '04', label: '日志', labelEn: 'JOURNAL' },
+  { id: 'about', index: '05', label: '关于', labelEn: 'ABOUT' },
   { id: 'contact', index: '06', label: '联系', labelEn: 'CONTACT' },
 ]

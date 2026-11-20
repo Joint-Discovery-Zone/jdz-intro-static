@@ -1,28 +1,29 @@
 <!doctype html>
-<html lang="zh-CN" class="no-js" data-theme="light">
+<html lang="zh-CN" class="no-js" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-    <title>JDZone · 三人软件工程小组</title>
+    <title>JDZone — Joint Discovery Zone</title>
     <meta
       name="description"
-      content="JDZone（Joint Discovery Zone）是一个由三名成员组成的软件工程小组。我们在协作中打磨产品，在迭代中验证想法。"
+      content="JDZone（Joint Discovery Zone）是三个人组成的软件工程小组。探索、构建、超越：从定义问题到上线交付，保持同一套标准。"
     />
     <meta name="author" content="JDZone" />
     <!-- 由内联脚本与 useTheme 共同更新，跟随手动主题而不是只跟随系统 -->
-    <meta name="theme-color" content="#F7F6F4" />
+    <meta name="theme-color" content="#05080C" />
 
-    <!-- 社交分享卡片：替换 public/og.png 即可更新预览图 -->
+    <!-- 社交分享卡片：替换 public/og.jpg 即可更新预览图 -->
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="zh_CN" />
-    <meta property="og:title" content="JDZone · Joint Discovery Zone" />
+    <meta property="og:site_name" content="JDZone" />
+    <meta property="og:title" content="JDZone — Explore. Create. Beyond." />
     <meta
       property="og:description"
-      content="JDZone 是一个专注软件工程实践的三人小组。我们在协作中打磨产品，在迭代中验证想法。"
+      content="三个人，一个标准。JDZone 是专注软件工程实践的三人小组，从问题定义到上线交付。"
     />
-    <meta property="og:image" content="/og.png" />
-    <meta property="og:image:alt" content="JDZone 三人软件工程小组：Joint Discovery Zone。" />
+    <meta property="og:image" content="/og.jpg" />
+    <meta property="og:image:alt" content="JDZone：电影感科幻城市主视觉，Joint Discovery Zone。" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -41,21 +42,16 @@
 
         try {
           var saved = localStorage.getItem('jdz-theme')
-          var theme =
-            saved === 'light' || saved === 'dark'
-              ? saved
-              : window.matchMedia('(prefers-color-scheme: dark)').matches
-                ? 'dark'
-                : 'light'
+          var theme = saved === 'light' || saved === 'dark' ? saved : 'dark'
           document.documentElement.dataset.theme = theme
           document.documentElement.style.colorScheme = theme
 
           var themeColor = document.querySelector('meta[name="theme-color"]')
           if (themeColor) {
-            themeColor.setAttribute('content', theme === 'dark' ? '#08090B' : '#F7F6F4')
+            themeColor.setAttribute('content', theme === 'dark' ? '#05080C' : '#EEF1F2')
           }
         } catch (error) {
-          /* 隐私模式下 localStorage 可能不可用，保持默认浅色即可 */
+          /* 隐私模式下 localStorage 可能不可用，保持默认深色即可 */
         }
       })()
     </script>
@@ -70,7 +66,7 @@
     <noscript>
       <div style="max-width: 720px; margin: 64px auto; padding: 0 24px; font-family: system-ui, sans-serif; line-height: 1.8">
         <h1>JDZone · Joint Discovery Zone</h1>
-        <p>JDZone 是一个专注软件工程实践的三人小组。我们在协作中打磨产品，在迭代中验证想法。</p>
+        <p>三个人，一个标准。JDZone 是专注软件工程实践的三人小组，从问题定义到上线交付。</p>
         <p>
           成员：zeionl（ENGINEERING）、Dreverie（PRODUCT &amp; UX）、jeffrey（DEVELOPMENT）。
         </p>

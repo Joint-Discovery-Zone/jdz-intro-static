@@ -15,7 +15,7 @@ defineProps<{
 
 <template>
   <SectionShell heading-id="about-title">
-    <ChapterHeading index="02" title="关于 JDZone" label-en="ABOUT" heading-id="about-title" />
+    <ChapterHeading index="05" title="关于 JDZone" label-en="ABOUT" heading-id="about-title" />
 
     <div class="mt-7 grid gap-[38px] min-[960px]:grid-cols-[1.05fr_0.95fr] min-[960px]:gap-[60px]">
       <div v-reveal="{ variant: 'left' }">

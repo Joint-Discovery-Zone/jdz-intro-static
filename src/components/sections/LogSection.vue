@@ -15,7 +15,7 @@ defineProps<{
 
 <template>
   <SectionShell heading-id="log-title">
-    <ChapterHeading index="05" title="开发日志" label-en="CHANGELOG" heading-id="log-title" />
+    <ChapterHeading index="04" title="开发日志" label-en="JOURNAL" heading-id="log-title" />
 
     <ul class="mt-8 max-w-[820px]">
       <li

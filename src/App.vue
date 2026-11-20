@@ -5,11 +5,9 @@ import { useBoot } from '@/composables/useBoot'
 import { useSectionNav } from '@/composables/useSectionNav'
 import { useTheme } from '@/composables/useTheme'
 import BootScreen from '@/components/layout/BootScreen.vue'
-import FooterBar from '@/components/layout/FooterBar.vue'
 import LazySection from '@/components/layout/LazySection.vue'
-import SideNav from '@/components/layout/SideNav.vue'
+import SiteFooter from '@/components/layout/SiteFooter.vue'
 import SiteHeader from '@/components/layout/SiteHeader.vue'
-import ParticleField from '@/components/background/ParticleField.vue'
 import HomeSection from '@/components/sections/HomeSection.vue'
 import ToastStack from '@/components/ui/ToastStack.vue'
 
@@ -30,10 +28,7 @@ const props = defineProps<{
 const scroller = ref<HTMLElement | null>(null)
 const sectionIds = props.content.sections.map((section) => section.id) as SectionId[]
 
-const { activeIndex, progress, scrollToId, scrollToIndex } = useSectionNav(
-  scroller,
-  sectionIds,
-)
+const { activeIndex, scrollToId, scrollToIndex } = useSectionNav(scroller, sectionIds)
 
 const { phase, progress: bootProgress, isBooting, skip, finish: finishBoot } = useBoot(820)
 const { toggle: toggleTheme } = useTheme()
@@ -43,10 +38,10 @@ const { toggle: toggleTheme } = useTheme()
  * 避免每次渲染都生成新的 loader 引用。
  */
 const loaders = {
-  about: () => import('@/components/sections/AboutSection.vue'),
   members: () => import('@/components/members/MembersSection.vue'),
   project: () => import('@/components/sections/ProjectSection.vue'),
   log: () => import('@/components/sections/LogSection.vue'),
+  about: () => import('@/components/sections/AboutSection.vue'),
   contact: () => import('@/components/sections/ContactSection.vue'),
 }
 
@@ -173,22 +168,12 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="relative">
-    <ParticleField />
-
     <a
       href="#main-content"
       class="fixed left-4 top-3 z-[70] -translate-y-24 bg-ink px-4 py-2 font-mono text-[11px] uppercase tracking-[0.18em] text-paper transition-transform duration-200 focus:translate-y-0"
     >
       跳到主要内容
     </a>
-
-    <!-- 四角准星：参考页的固定装饰，窄屏隐藏，避免压住内容 -->
-    <div aria-hidden="true" class="pointer-events-none fixed inset-0 z-30 hidden md:block">
-      <span class="crosshair left-10 top-[96px]" />
-      <span class="crosshair right-10 top-[96px]" />
-      <span class="crosshair bottom-16 left-10" />
-      <span class="crosshair bottom-16 right-10" />
-    </div>
 
     <div :inert="isBooting" class="relative z-10">
       <SiteHeader
@@ -208,11 +193,6 @@ onBeforeUnmount(() => {
         <HomeSection id="home" :content="content" />
 
         <LazySection
-          section-id="about"
-          :loader="loaders.about"
-          :content="content"
-        />
-        <LazySection
           section-id="members"
           :loader="loaders.members"
           :content="content"
@@ -228,19 +208,18 @@ onBeforeUnmount(() => {
           :content="content"
         />
         <LazySection
+          section-id="about"
+          :loader="loaders.about"
+          :content="content"
+        />
+        <LazySection
           section-id="contact"
           :loader="loaders.contact"
           :content="content"
         />
+
+        <SiteFooter :content="content" />
       </main>
-
-      <SideNav
-        :sections="content.sections"
-        :active-index="activeIndex"
-        @navigate="goSection"
-      />
-
-      <FooterBar :progress="progress" />
     </div>
 
     <BootScreen

@@ -4,6 +4,7 @@ import { createApp } from 'vue'
 // 中文由系统字体承担，避免把 cyrillic / greek 等用不到的字形打进产物。
 import '@fontsource/oswald/latin-500.css'
 import '@fontsource/oswald/latin-700.css'
+import '@fontsource/archivo-black/latin-400.css'
 import '@fontsource/jetbrains-mono/latin-400.css'
 import '@fontsource/jetbrains-mono/latin-500.css'
 import './assets/styles/main.css'
