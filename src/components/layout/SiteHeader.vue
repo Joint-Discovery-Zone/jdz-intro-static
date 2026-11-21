@@ -3,6 +3,7 @@ import { PhArrowUpRight, PhList } from '@phosphor-icons/vue'
 import { computed, ref } from 'vue'
 import type { SectionId, SectionMeta } from '@/types/site'
 import ThemeToggle from '@/components/ui/ThemeToggle.vue'
+import BrandMark from '@/components/ui/BrandMark.vue'
 import MobileNav from './MobileNav.vue'
 
 /**
@@ -51,7 +52,7 @@ function handleMenuNavigate(id: string) {
       aria-label="回到首页"
       @click="go('home')"
     >
-      <span class="cinema-mark" aria-hidden="true"><span>JDZ</span></span>
+      <BrandMark size="md" />
       <span class="flex flex-col items-start leading-none">
         <span class="text-[19px] font-semibold tracking-[-0.02em] text-white">JDZone</span>
         <span class="mt-1 hidden font-mono text-[8px] uppercase tracking-[0.28em] text-white/42 sm:block">

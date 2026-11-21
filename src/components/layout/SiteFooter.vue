@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { PhArrowUp } from '@phosphor-icons/vue'
 import type { SiteContent } from '@/types/site'
+import BrandMark from '@/components/ui/BrandMark.vue'
 
 /**
  * 页脚
@@ -14,7 +15,7 @@ defineProps<{ content: SiteContent }>()
   <footer class="site-footer relative border-t border-white/10 bg-[#04070a] px-6 py-10 sm:px-10 lg:px-14 xl:px-20">
     <div class="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-6">
       <div class="flex items-center gap-3">
-        <span class="cinema-mark" aria-hidden="true"><span>JDZ</span></span>
+        <BrandMark size="sm" />
         <div>
           <p class="text-sm font-semibold text-white">JDZone</p>
           <p class="mt-1 font-mono text-[8px] uppercase tracking-[0.24em] text-white/38">

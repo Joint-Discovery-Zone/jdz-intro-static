@@ -2,6 +2,7 @@
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { PhArrowRight, PhX } from '@phosphor-icons/vue'
 import type { SectionMeta } from '@/types/site'
+import BrandMark from '@/components/ui/BrandMark.vue'
 
 /**
  * 移动端章节菜单
@@ -76,7 +77,7 @@ onBeforeUnmount(() => setScrollLock(false))
     <div class="flex h-full flex-col">
       <div class="flex h-20 shrink-0 items-center justify-between border-b border-white/10 px-5">
         <span class="flex items-center gap-3">
-          <span class="cinema-mark" aria-hidden="true"><span>JDZ</span></span>
+          <BrandMark size="md" />
           <span class="text-[19px] font-semibold tracking-[-0.02em]">JDZone</span>
         </span>
 

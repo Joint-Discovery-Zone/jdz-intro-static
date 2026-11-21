@@ -1,6 +1,6 @@
 # JDZone · Joint Discovery Zone
 
-三个人组成的软件工程小组介绍站。当前版本以用户提供的科幻城市主视觉为基准做了电影感重构：全幅照片首屏、Archivo Black 巨型标题、酸性黄单一强调色、五个主章节加一个联系页。工程侧继续使用 Vue 3 + TypeScript + Tailwind CSS，内容、主题、导航、懒加载与后端接入都是可维护的独立模块。
+三个人组成的软件工程小组介绍站。当前版本以用户提供的科幻城市主视觉为基准做了电影感重构：全幅照片首屏、自绘的 JDZ Sector 巨型标题、酸性黄单一强调色、五个主章节加一个联系页。工程侧继续使用 Vue 3 + TypeScript + Tailwind CSS，内容、主题、导航、懒加载与后端接入都是可维护的独立模块。
 
 当前是**纯静态站点**，构建产物可以直接部署到 Netlify、Cloudflare Pages 或任意静态托管；内容读取收敛在服务层，后续接 API 时页面组件不用改。
 
@@ -13,7 +13,7 @@
 | 样式 | Tailwind CSS 4（`@theme inline` + CSS 变量） |
 | 三维 | Three.js 0.187（WATCH INTRO 弹层里的点云字标，独立懒加载 chunk） |
 | 图标 | `@phosphor-icons/vue` |
-| 字体 | `@fontsource/archivo-black`、`@fontsource/oswald`、`@fontsource/jetbrains-mono`，本地托管、只打包 Latin 子集 |
+| 字体 | 自绘 `JDZ Sector`（Woff2，Latin 大写/数字/标点）、`@fontsource/archivo-black`（回退）、`@fontsource/oswald`、`@fontsource/jetbrains-mono`，本地托管 |
 | 部署 | Netlify（`netlify.toml` 已配置） |
 
 没有引入路由。整站是单页六章节，导航由滚动容器、IntersectionObserver 与 `history.replaceState` 完成，减少一层依赖。
@@ -37,12 +37,37 @@ pnpm typecheck  # 只跑类型检查
 - **参考图优先**：首屏是从用户提供的 1672 × 941 主视觉做 1:1 重绘。原图里烘焙了旧站点的标题、按钮、页脚，构建时用带羽化的模糊遮罩清掉这些区域，再交给真实 DOM 排版；城市、环形结构、瀑布和云海保持不动。图片在 `public/images/hero-cinematic.jpg`。
 - **首屏结构**：左侧三行 `JOINT / DISCOVERY / ZONE`，`ZONE` 后接黄色斜块；下方 `EXPLORE. CREATE. BEYOND.`、斜切 CTA、圆形 WATCH INTRO；底部 `01 / 05`、SCROLL DOWN、黄色角标与细底线。页眉是透明渐变，浅色主题下才切换为深色实底。
 - **单一强调色**：默认深色主题以近黑 `#05080c` 为底，酸性黄 `#e8f33c` 只负责品牌线条、激活态和主要动作；浅色主题用橄榄绿 `#6c7600` 保证浅底可读。首屏照片始终深色，因此首屏与页眉始终使用酸性黄，不随主题变绿。
-- **字体分工**：巨型标题用 Archivo Black，字重固定、字距收紧；章节标题用 Oswald；正文用系统无衬线；导航、索引、HUD 用 JetBrains Mono。所有字体自托管并只保留 Latin 子集。
+- **字体分工**：巨型标题与章节英文标题用自绘的 `JDZ Sector`（900 单字重，宽体、切角）；正文用系统无衬线；导航、索引、HUD 用 JetBrains Mono；Oswald 仍用于少数辅助数字。`Archivo Black` 保留为字体加载失败时的回退。
+- **左上角标识**：参考图里的斜切 JDZ 标识已经重新描成独立 SVG（`public/brand/jdz-mark.svg`），通过 `BrandMark` 组件统一用于页眉、页脚和移动菜单，不再用 CSS 伪元素拼字。
 - **章节结构**：五个主章节 `HOME / THE THREE / PROJECTS / JOURNAL / ABOUT`，联系页作为收尾的 `CONTACT`。首屏底部的 `01 / 05` 指五个主章节，联系页是独立的结束页。
 - **滚动方式**：重构版去掉了强制 scroll-snap，改为自然滚动。导航由 IntersectionObserver 判断当前章节，`scrollIntoView` 与 hash 同步集中在一个 composable 中，减少移动端被吸附打断的情况。
 - **主题切换**：`data-theme` 驱动 CSS 变量；`index.html` 内联脚本在样式加载前恢复主题，默认深色。切换时先铺目标主题底色，用 WAAPI 从按钮位置圆形扩散，并叠加独立的 HUD 网格、扫描线、描边环、准星和模式标签；动画完成或 1100ms 兜底后提交主题，不依赖 `transitionend`。
 - **动效**：章节用 `v-reveal` 做位移、模糊和透明度复合入场，按阅读顺序错峰；首屏照片有轻微指针视差；按钮保留切角内描边、悬停上浮与鱼鳞式水波；WATCH INTRO 使用原生 dialog，关闭即销毁 Three.js 场景，避免后台持续跑 rAF。
 - **Three.js 的边界**：点云字标只出现在 WATCH INTRO 里，不再占用首屏主视觉。约两万个点（移动端约九千）由代码碎片汇入，静止后只保留点阵与三条轨道节点；指针排斥通过射线反投影到字面平面，中心与光标对齐。减弱动效、WebGL 不可用或加载失败时自动落回 2D 点阵字。
+
+## 定制字体与 SVG 标识
+
+### JDZ Sector
+
+标题字是站的定制展示字体，不是现成商业字体的改名套壳：字宽、字重、切角和字腔都按参考图的工业感重新画，单字重、Latin 大写 + 数字 + 标点。中文不包含在字体里，继续由系统字体回退，避免完整 CJK 字库把首屏压垮。
+
+- 设计源：`design/jdz-sector/glyph-sheet.svg` 是逐字形的 SVG 字表；`tools/build-font.py` 里保存同一套 1000-unit 轮廓，并负责生成 TTF/WOFF2。
+- 产物：`public/fonts/jdz-sector.woff2`（约 1.7 kB）、`public/fonts/jdz-sector.ttf`（约 5 kB），通过 `@font-face` 接入，并在 `index.html` 里 preload。
+- 构建：先安装构建依赖，再生成字体。`.tools/` 只用于本地构建，已被 `.gitignore` 排除，不会进入站点产物。
+
+```bash
+python -m pip install -r tools/requirements.txt --target .tools
+python tools/build-font.py
+```
+
+- 接入位置：`--f-hero`、`.font-sector`、首屏标题和 `ChapterHeading` 的英文标题；字体加载失败时回退到 Archivo Black。
+- 这是一套按参考图气质重画的展示字体，不是对原图字体的逐字复制；如果要做到“完全一样”，需要原字体文件或更细的逐字描摹，当前版本优先保证风格一致和可维护性。
+
+### SVG JDZ 标识
+
+- `tools/trace-mark.py` 从参考图左上角按颜色阈值提取轮廓，`approxPolyDP` 简化后写成 `public/brand/jdz-mark.svg`（`viewBox="0 0 72 30"`，`fill-rule="evenodd"`）。原图不随仓库提交，重描时用 `REFERENCE_IMAGE=... python tools/trace-mark.py` 指向这张 1672 × 941 参考图。
+- `src/components/ui/BrandMark.vue` 提供 `sm / md / lg` 三档高度，页眉、页脚、移动菜单共用同一个资产；标识固定使用酸性黄，因为页眉在所有主题下都保持深底。
+- favicon 仍是独立的 `public/favicon.svg`，避免把 72×30 的横标硬塞进方形图标。
 
 ## 目录结构
 
@@ -61,7 +86,20 @@ src/
    ├─ sections/               # 首页、关于、项目进展、开发日志、联系、首屏预告
    ├─ members/                # 成员档案（tablist + 滑动切换）与档案板
    ├─ background/             # 点阵字、Three.js 点云字标
-   └─ ui/                     # 按钮、章节标题、主题开关、Toast、骨架屏…
+   └─ ui/                     # 按钮、章节标题、主题开关、BrandMark、Toast、骨架屏…
+
+design/
+└─ jdz-sector/glyph-sheet.svg  # JDZ Sector 的 SVG 字形总表（设计源）
+
+tools/
+├─ build-font.py              # 轮廓 → TTF/WOFF2 + SVG 字表
+├─ trace-mark.py              # 参考图左上角标识 → SVG
+└─ requirements.txt           # 仅构建期使用的 Python 依赖
+
+public/
+├─ brand/jdz-mark.svg         # 斜切 JDZ 横标
+├─ fonts/jdz-sector.*         # 线上字体产物
+└─ images/hero-cinematic.jpg  # 首屏主视觉
 ```
 
 ## 修改内容
@@ -136,13 +174,13 @@ export async function loadSiteContent(): Promise<SiteContent>
 
 - **首屏最小化**：首页同步打包，其余五章由 `LazySection` 在距离视口 1200px 时动态 `import()`，加载中显示同尺寸骨架屏；首屏空闲后再预取全部章节，避免滚动时插入骨架造成跳动。
 - **主视觉**：`hero-cinematic.jpg` 为 1672 × 941、约 183 kB，`fetchpriority="high"`、`decoding="async"`，构建后原样进入 `dist/images/`。
-- **字体本地化 + 子集化**：Archivo Black 400、Oswald 500/700、JetBrains Mono 400/500 的 Latin 子集，构建后共 10 个字体文件，不请求第三方字体服务。
+- **字体本地化 + 子集化**：JDZ Sector 900（自绘，约 1.7 kB）、Archivo Black 400（回退）、Oswald 500/700、JetBrains Mono 400/500 的 Latin 子集，构建后共 11 个字体文件，不请求第三方字体服务。
 - **拆分稳定依赖**：Vite `manualChunks` 把 Vue、图标、Three.js、其余 vendor 分开，业务代码更新时缓存不失效。
 - **Three.js 按需加载**：`three` 是独立 chunk（约 753 kB / gzip 193 kB），只在打开 WATCH INTRO 时动态 `import()`；关闭弹层即销毁场景。移动端采样步长更大（约 9 千点），桌面约 2 万点。
 - **主题不闪白**：`index.html` 内联脚本在首屏绘制前写 `data-theme` 与 `color-scheme`。
 - **入场动画**：`v-reveal` 用 IntersectionObserver，只触发一次；无 JS 时内容直接可见。
 - **主题切换无阻塞**：遮罩层动画不等待 CSS 过渡事件，动画完成、失败或超时都会提交状态；减弱动效时改为 220ms 旧底色淡出。
-- 当前生产包约：入口 JS 56 kB（gzip 21 kB）、Vue 78 kB（gzip 31 kB）、图标 23 kB（gzip 5.5 kB）、CSS 57 kB（gzip 12 kB），五个懒加载章节各 1.3 至 9.6 kB；Three.js 单独 753 kB（gzip 193 kB），不进首屏主包。
+- 当前生产包约：入口 JS 56 kB（gzip 21.3 kB）、Vue 78 kB（gzip 31 kB）、图标 23 kB（gzip 5.5 kB）、CSS 57 kB（gzip 12.1 kB），五个懒加载章节各 1.3 至 9.6 kB；JDZ Sector 约 1.7 kB；Three.js 单独 753 kB（gzip 193 kB），不进首屏主包。
 
 ## 可访问性
 
@@ -186,6 +224,7 @@ pnpm build
 ## 已知边界
 
 - 1:1 对齐的是首屏主视觉与导航骨架；其余章节沿用原站的档案式内容结构，只换了电影感皮肤与章节顺序。
+- JDZ Sector 是按参考图重画的单字重展示字体，不是原字体的逐字复制；字表、构建脚本和 SVG 源都留在仓库里，后续可以继续逐字微调。
 - 远程内容接口只有前端契约与降级逻辑，示例后端未包含在仓库内。
 - 没有单元测试与端到端测试；交互验收目前依赖手动脚本与截图。
 - 主视觉来自用户提供的素材；替换 `public/images/hero-cinematic.jpg` 与 `public/og.jpg` 即可换图，注意同步 `HomeSection.vue` 的宽高与 OG 尺寸。

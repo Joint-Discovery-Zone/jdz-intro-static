@@ -33,7 +33,7 @@ withDefaults(
       v-if="title"
       v-reveal="{ delay: 60, variant: 'up' }"
       :id="headingId"
-      class="mt-7 font-display text-[clamp(44px,5.6vw,78px)] font-bold uppercase leading-[0.94] tracking-[0.005em]"
+      class="font-sector mt-7 text-[clamp(44px,5.6vw,78px)] uppercase leading-[0.94]"
     >
       {{ title }}
     </h2>

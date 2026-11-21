@@ -29,6 +29,14 @@
     <meta name="twitter:card" content="summary_large_image" />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- 首屏展示字：很小的 woff2，提前取，避免大标题先闪回退字体 -->
+    <link
+      rel="preload"
+      href="/fonts/jdz-sector.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous"
+    />
 
     <!--
       在样式加载前确定主题，避免浅色页面闪一下再变深色（FOUC）。

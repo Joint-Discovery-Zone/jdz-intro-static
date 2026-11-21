@@ -1,0 +1,8 @@
+# Build-time only. Install into .tools/ (gitignored), never into the site bundle.
+#
+#   python -m pip install -r tools/requirements.txt --target .tools
+#   python tools/build-font.py
+#   python tools/trace-mark.py   # only needed when re-tracing the reference mark
+fonttools==4.68.0
+brotli==1.2.1
+opencv-python-headless

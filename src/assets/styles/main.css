@@ -12,6 +12,16 @@
 
 @import 'tailwindcss';
 
+/* 展示字体：由 tools/build-font.py 从 SVG 轮廓编译，仅拉丁字母/数字/标点 */
+@font-face {
+  font-family: 'JDZ Sector';
+  src: url('/fonts/jdz-sector.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0020-007E;
+}
+
 @theme inline {
   /* 语义色：真正取值来自 :root / [data-theme="dark"]，切换主题无需重新编译 */
   --color-paper: var(--c-bg);
@@ -68,7 +78,9 @@
       'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', 'PingFang SC',
       'Microsoft YaHei', monospace;
     --f-display: 'Oswald', 'Impact', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-    --f-hero: 'Archivo Black', 'Arial Black', 'Oswald', 'Impact', sans-serif;
+    --f-hero:
+      'JDZ Sector', 'Archivo Black', 'Arial Black', 'Oswald', 'PingFang SC', 'Microsoft YaHei',
+      sans-serif;
   }
 
   /* 日间主题：保留切换能力，但把酸性黄降到橄榄色以保证浅底上的文字对比度 */
@@ -1012,13 +1024,20 @@
 
   .hero-headline {
     font-family: var(--f-hero);
-    font-weight: 400;
+    font-weight: 900;
     text-transform: uppercase;
     color: #f4f6f7;
     font-size: clamp(48px, 6.4vw, 98px);
     line-height: 0.87;
-    letter-spacing: -0.028em;
+    letter-spacing: -0.018em;
     text-wrap: nowrap;
+  }
+
+  /* 展示字：首屏与英文章节标题共用同一套 SVG 字形 */
+  .font-sector {
+    font-family: var(--f-hero);
+    font-weight: 900;
+    letter-spacing: -0.005em;
   }
 
   /* ZONE 后面的黄色斜块，是参考图里最有辨识度的锚点 */
@@ -1208,46 +1227,6 @@
   .cinema-nav-link.is-active::after,
   .cinema-nav-link:hover::after {
     transform: scaleX(1);
-  }
-
-  /* J D Z 斜切字标 */
-  .cinema-mark {
-    position: relative;
-    display: inline-grid;
-    height: 34px;
-    width: 46px;
-    place-items: center;
-    overflow: hidden;
-    color: var(--c-accent);
-    font-family: var(--f-display);
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-  }
-
-  .cinema-mark::before,
-  .cinema-mark::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 5px;
-    background: var(--c-accent);
-    transform: skewX(-18deg);
-  }
-
-  .cinema-mark::before {
-    left: 2px;
-  }
-
-  .cinema-mark::after {
-    left: 10px;
-    opacity: 0.55;
-  }
-
-  .cinema-mark > span {
-    position: relative;
-    padding-left: 14px;
   }
 
   /* ---------- 后续章节 ---------- */
